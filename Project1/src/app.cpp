@@ -1,15 +1,43 @@
-#include <psp2/kernel/processmgr.h>
+extern "C"
+{
+    #include <psp2/kernel/modulemgr.h>
+    #include <psp2/kernel/processmgr.h>
+    #include <psp2/libdbg.h>
+    #include <psp2/shacccg.h>
+}
 
 #include "app.h"
-#include "debugScreen.h"
+#include "eglInstance.h"
 
 App::App()
+    :m_sce_piglet_id(UINT32_MAX),
+     m_shacc_cg_id  (UINT32_MAX)
 {
-    /* Stub */
+    /* Set up EGL & GLES2 support */
+    m_sce_piglet_id = sceKernelLoadStartModule("app0:/module/libScePiglet.suprx",
+                                               0,        /* args   */
+                                               nullptr,  /* argp   */
+                                               0,        /* flags  */
+                                               nullptr,  /* option */
+                                               nullptr); /* status */
+
+    m_shacc_cg_id   = sceKernelLoadStartModule("app0:/module/libshacccg.suprx",
+                                               0,        /* args   */
+                                               nullptr,  /* argp   */
+                                               0,        /* flags  */
+                                               nullptr,  /* option */
+                                               nullptr); /* status */
+
+    SCE_DBG_ASSERT(m_sce_piglet_id != 0);
+    SCE_DBG_ASSERT(m_shacc_cg_id   != 0);
+
+    sceShaccCgSetMemAllocator(malloc,
+                              free);
 }
 
 App::~App()
 {
+    sceKernelDelayThread(2 * 1000000);
     sceKernelExitProcess(0);
 }
 
@@ -20,9 +48,5 @@ int App::getResult()
 
 void App::run()
 {
-    psvDebugScreenInit();
-
-    psvDebugScreenPrintf("I am a test\n");
-
-    sceKernelDelayThread(3 * 1000000);
+    m_egl_instance_ptr = EGLInstance::create();
 }
