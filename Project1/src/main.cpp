@@ -1,14 +1,10 @@
-#include <psp2/kernel/processmgr.h>
-#include "debugScreen.h"
+#include "app.h"
 
-int main(int argc, char *argv[])
+int main(int /* argc */, char* /* argv */[])
 {
-	psvDebugScreenInit();
+    App app;
 
-	psvDebugScreenPrintf("I am a test\n");
+    app.run();
 
-    sceKernelDelayThread(3 * 1000000);
-	sceKernelExitProcess(0);
-
-    return 0;
+    return app.getResult();
 }
