@@ -30,7 +30,8 @@ set(DOLCE_MKSFOEX_FLAGS    "${DOLCE_MKSFOEX_FLAGS} -d PARENTAL_LEVEL=1")
 
 ADD_COMPILE_OPTIONS(-fno-common -fno-lto -ftree-vectorize -funsafe-math-optimizations -fno-exceptions -fno-rtti)
 ADD_DEFINITIONS(-DEGL_NO_X11)
-#ADD_LINK_OPTIONS(-nostdlib)
+ADD_DEFINITIONS(-D__vita__)
+ADD_DEFINITIONS(-D__VITA__)
 
 include_directories(${DOLCESDK}/samples/common
                    )
@@ -43,6 +44,7 @@ add_executable("${ELF}"
                src/eglInstance.cpp
                src/io.cpp
                src/main.cpp
+               src/thread.cpp
               )
 
 target_link_libraries("${ELF}"

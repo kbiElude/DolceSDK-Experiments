@@ -48,5 +48,9 @@ int App::getResult()
 
 void App::run()
 {
-    m_egl_instance_ptr = EGLInstance::create();
+    /* Set up an ES context */
+    m_egl_instance_ptr = EGLInstance::create(false,  /* in_require_depth_buffer   */
+                                             false); /* in_require_stencil_buffer */
+
+    SCE_DBG_ASSERT(m_egl_instance_ptr != nullptr);
 }

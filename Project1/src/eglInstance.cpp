@@ -10,7 +10,10 @@ extern "C"
 #include "io.h"
 
 EGLInstance::EGLInstance()
-    :m_display(nullptr)
+    :m_display       (nullptr),
+     m_egl_config_ptr(nullptr),
+     m_egl_context   (nullptr),
+     m_egl_surface   (nullptr)
 {
     /* Stub */
 }
@@ -20,7 +23,8 @@ EGLInstance::~EGLInstance()
     /* Stub */
 }
 
-std::unique_ptr<EGLInstance> EGLInstance::create()
+std::unique_ptr<EGLInstance> EGLInstance::create(const bool& in_require_depth_buffer,
+                                                 const bool& in_require_stencil_buffer)
 {
     std::unique_ptr<EGLInstance> result_ptr;
 
@@ -31,7 +35,8 @@ std::unique_ptr<EGLInstance> EGLInstance::create()
     SCE_DBG_ASSERT(result_ptr != nullptr);
     if (result_ptr != nullptr)
     {
-        if (!result_ptr->init() )
+        if (!result_ptr->init(in_require_depth_buffer,
+                              in_require_stencil_buffer) )
         {
             SCE_DBG_ASSERT(false);
 
@@ -42,7 +47,8 @@ std::unique_ptr<EGLInstance> EGLInstance::create()
     return result_ptr;
 }
 
-bool EGLInstance::init()
+bool EGLInstance::init(const bool& in_require_depth_buffer,
+                       const bool& in_require_stencil_buffer)
 {
     EGLBoolean result;
 
@@ -94,13 +100,7 @@ bool EGLInstance::init()
                 {EGL_CONFIG_ID,          &current_egl_config_props.egl_config_id},
                 {EGL_DEPTH_SIZE,         &current_egl_config_props.n_depth_bits},
                 {EGL_GREEN_SIZE,         &current_egl_config_props.n_green_bits},
-                {EGL_MAX_PBUFFER_HEIGHT, &current_egl_config_props.max_pbuffer_height},
-                {EGL_MAX_PBUFFER_WIDTH,  &current_egl_config_props.max_pbuffer_width},
-                {EGL_MAX_SWAP_INTERVAL,  &current_egl_config_props.max_swap_interval},
-                {EGL_MIN_SWAP_INTERVAL,  &current_egl_config_props.min_swap_interval},
-                {EGL_NATIVE_RENDERABLE,  &current_egl_config_props.native_renderable},
                 {EGL_RED_SIZE,           &current_egl_config_props.n_red_bits},
-                {EGL_SAMPLES,            &current_egl_config_props.n_samples},
                 {EGL_STENCIL_SIZE,       &current_egl_config_props.n_stencil_bits}
             };
 
@@ -116,39 +116,69 @@ bool EGLInstance::init()
         }
     }
 
+    /* On 3.60, we are reported 3 different configs, the only difference between the three being presence (or lack)
+     * of depth and/or stencil buffer.
+     *
+     * Pick the right EGLConfig instance, depending on the input arguments.
+     **/
     {
-        std::stringstream result_sstream;
+        uint32_t best_score = 0xFFFFFFFFu;
 
-        for (auto n_egl_config = 0;
-                  n_egl_config < m_egl_config_vec.size();
-                ++n_egl_config)
+        for (const auto& current_egl_config : m_egl_config_vec)
         {
-            const auto& current_egl_config = m_egl_config_vec.at(n_egl_config);
+            uint32_t score = 0;
 
-            result_sstream << "EGL config [" << n_egl_config << "]\n"
-                              "\n"
-                              "Alpha size:         " << current_egl_config.n_alpha_bits       << "\n"
-                              "Blue size:          " << current_egl_config.n_blue_bits        << "\n"
-                              "Config ID:          " << current_egl_config.egl_config_id      << "\n"
-                              "Depth size:         " << current_egl_config.n_depth_bits       << "\n"
-                              "Green size:         " << current_egl_config.n_green_bits       << "\n"
-                              "Max pbuffer height: " << current_egl_config.max_pbuffer_height << "\n"
-                              "Max pbuffer width:  " << current_egl_config.max_pbuffer_width  << "\n"
-                              "Max swap interval:  " << current_egl_config.max_swap_interval  << "\n"
-                              "Min swap interval:  " << current_egl_config.min_swap_interval  << "\n"
-                              "Native renderable:  " << current_egl_config.native_renderable  << "\n"
-                              "Red size:           " << current_egl_config.n_red_bits         << "\n"
-                              "Samples:            " << current_egl_config.n_samples          << "\n"
-                              "Stencil size:       " << current_egl_config.n_stencil_bits     << "\n"
-                              "\n"
-                              "---\n";
+            if (( in_require_depth_buffer && current_egl_config.n_depth_bits != 0) ||
+                (!in_require_depth_buffer && current_egl_config.n_depth_bits == 0) )
+            {
+                ++score;
+            }
+
+            if (( in_require_stencil_buffer && current_egl_config.n_stencil_bits != 0) ||
+                (!in_require_stencil_buffer && current_egl_config.n_stencil_bits == 0) )
+            {
+                ++score;
+            }
+
+            if ((best_score == 0xFFFFFFu) ||
+                (best_score <  score) )
+            {
+                best_score       = score;
+                m_egl_config_ptr = &current_egl_config;
+            }
         }
-
-        IO::write_file("ux0:data/log.txt",
-                       result_sstream.str().c_str(),
-                       static_cast<uint32_t>(result_sstream.str().size() ));
     }
 
-    return true;
+    SCE_DBG_ASSERT(m_egl_config_ptr != nullptr);
+
+    /* Create an ES context. */
+    {
+        static const EGLint attrib_list[] =
+        {
+            EGL_CONTEXT_MAJOR_VERSION, 2,
+            EGL_CONTEXT_MINOR_VERSION, 0,
+            EGL_NONE
+        };
+
+        m_egl_context = eglCreateContext(m_display,
+                                         m_egl_config_ptr->egl_config,
+                                         EGL_NO_CONTEXT, /* share_context */
+                                         attrib_list);
+
+        SCE_DBG_ASSERT(m_egl_context != EGL_NO_CONTEXT);
+    }
+
+    /* Create a rendering surface. */
+    m_egl_surface = eglCreateWindowSurface(m_display,
+                                           m_egl_config_ptr->egl_config,
+                                           VITA_WINDOW_960X544,
+                                           nullptr); /* attrib_list */
+    SCE_DBG_ASSERT(m_egl_surface != EGL_NO_SURFACE);
+
+    /* NOTE: Do not bind the context to the calling thread. It is caller's responsibility to invoke bind()
+     *       from the right thread later on.
+     */
+    return (m_egl_context != nullptr &&
+            m_egl_surface != nullptr);
 }
 
