@@ -20,7 +20,30 @@ EGLInstance::EGLInstance()
 
 EGLInstance::~EGLInstance()
 {
-    /* Stub */
+    if (m_egl_context != nullptr)
+    {
+        ::eglDestroyContext(m_display,
+                            m_egl_context);
+    }
+
+    if (m_egl_surface != nullptr)
+    {
+        ::eglDestroySurface(m_display,
+                            m_egl_surface);
+    }
+}
+
+bool EGLInstance::bind_to_current_thread()
+{
+    bool result = false;
+
+    result = ::eglMakeCurrent(m_display,
+                              m_egl_surface,
+                              m_egl_surface,
+                              m_egl_context) == EGL_TRUE;
+
+    SCE_DBG_ASSERT(result);
+    return result;
 }
 
 std::unique_ptr<EGLInstance> EGLInstance::create(const bool& in_require_depth_buffer,

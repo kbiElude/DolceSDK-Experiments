@@ -22,6 +22,8 @@ public:
     static std::unique_ptr<EGLInstance> create(const bool& in_require_depth_buffer,
                                                const bool& in_require_stencil_buffer);
 
+    bool bind_to_current_thread();
+
 private:
     /* Private functions */
     EGLInstance();

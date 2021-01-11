@@ -44,6 +44,8 @@ add_executable("${ELF}"
                src/eglInstance.cpp
                src/io.cpp
                src/main.cpp
+               src/mutex.cpp
+               src/semaphore.cpp
                src/thread.cpp
               )
 
