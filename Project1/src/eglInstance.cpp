@@ -205,3 +205,8 @@ bool EGLInstance::init(const bool& in_require_depth_buffer,
             m_egl_surface != nullptr);
 }
 
+void EGLInstance::swap_buffers()
+{
+    eglSwapBuffers(m_display,
+                  m_egl_surface);
+}

@@ -23,6 +23,7 @@ public:
                                                const bool& in_require_stencil_buffer);
 
     bool bind_to_current_thread();
+    void swap_buffers          ();
 
 private:
     /* Private functions */

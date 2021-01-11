@@ -51,6 +51,7 @@ add_executable("${ELF}"
 
 target_link_libraries("${ELF}"
                       libScePiglet_stub
+                      SceCtrl_stub
                       SceLibc_stub
                       SceLibKernel_stub
                       ScePafStdc_stub
