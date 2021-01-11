@@ -12,7 +12,7 @@ public:
 
     ~Mutex();
 
-    bool lock    (const SceUInt32* in_opt_timeout_in_microseconds_ptr);
+    bool lock    (const SceUInt32* in_opt_timeout_in_microseconds_ptr = nullptr);
     bool try_lock();
 
     bool unlock();
