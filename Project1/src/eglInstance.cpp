@@ -163,7 +163,7 @@ bool EGLInstance::init(const bool& in_require_depth_buffer,
                 ++score;
             }
 
-            if ((best_score == 0xFFFFFFu) ||
+            if ((best_score == 0xFFFFFFFFu) ||
                 (best_score <  score) )
             {
                 best_score       = score;
@@ -207,6 +207,6 @@ bool EGLInstance::init(const bool& in_require_depth_buffer,
 
 void EGLInstance::swap_buffers()
 {
-    eglSwapBuffers(m_display,
-                  m_egl_surface);
+    ::eglSwapBuffers(m_display,
+                     m_egl_surface);
 }

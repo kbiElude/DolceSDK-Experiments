@@ -21,7 +21,7 @@ public:
 
 private:
     /* Private functions */
-    void rendering_thread_entrypoint();
+    static int rendering_thread_entrypoint(void* app_raw_ptr);
 
     /* Private variables */
     SceUID m_sce_piglet_id;
