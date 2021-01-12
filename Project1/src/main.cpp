@@ -2,9 +2,9 @@
 
 int main(int /* argc */, char* /* argv */[])
 {
-    App app;
+    std::unique_ptr<App> app_ptr(new App() );
 
-    app.run();
+    app_ptr->run();
 
-    return app.getResult();
+    return app_ptr->getResult();
 }

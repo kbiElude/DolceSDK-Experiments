@@ -8,48 +8,15 @@ extern "C"
     #include <psp2/shacccg.h>
 }
 
-#include <functional>
 
 #include "app.h"
 #include "eglInstance.h"
 #include "thread.h"
 
 App::App()
-    :m_must_die     (false),
-     m_sce_piglet_id(UINT32_MAX),
-     m_shacc_cg_id  (UINT32_MAX)
+    :m_must_die(false)
 {
-    /* Set up EGL & GLES2 support */
-    m_sce_piglet_id = sceKernelLoadStartModule("app0:/module/libScePiglet.suprx",
-                                               0,        /* args   */
-                                               nullptr,  /* argp   */
-                                               0,        /* flags  */
-                                               nullptr,  /* option */
-                                               nullptr); /* status */
-
-    m_shacc_cg_id   = sceKernelLoadStartModule("app0:/module/libshacccg.suprx",
-                                               0,        /* args   */
-                                               nullptr,  /* argp   */
-                                               0,        /* flags  */
-                                               nullptr,  /* option */
-                                               nullptr); /* status */
-
-    SCE_DBG_ASSERT(m_sce_piglet_id != 0);
-    SCE_DBG_ASSERT(m_shacc_cg_id   != 0);
-
-    sceShaccCgSetMemAllocator(malloc,
-                              free);
-}
-
-App::~App()
-{
-    sceKernelDelayThread(2 * 1000000);
-    sceKernelExitProcess(0);
-}
-
-int App::getResult()
-{
-    return 0;
+    /* Stub */
 }
 
 int App::rendering_thread_entrypoint(void* app_raw_ptr)

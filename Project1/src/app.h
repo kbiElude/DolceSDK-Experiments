@@ -1,32 +1,23 @@
 #ifndef APP_H
 #define APP_H
 
-extern "C"
-{
-    #include <psp2/types.h>
-}
+#include "baseApp.h"
+#include "eglInstance.h"
 
 #include <memory>
 
-class EGLInstance;
-
-class App
+class App : public BaseApp
 {
 public:
-     App();
-    ~App();
+    App();
 
-    int  getResult();
-    void run      ();
+    void run() final;
 
 private:
     /* Private functions */
     static int rendering_thread_entrypoint(void* app_raw_ptr);
 
     /* Private variables */
-    SceUID m_sce_piglet_id;
-    SceUID m_shacc_cg_id;
-
     std::unique_ptr<EGLInstance> m_egl_instance_ptr;
 
     volatile bool m_must_die;
