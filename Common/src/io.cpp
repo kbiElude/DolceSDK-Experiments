@@ -6,7 +6,6 @@ extern "C"
 
 #include <string.h>
 
-#include "app.h"
 #include "io.h"
 
 void IO::write_file(const char*     in_file_name_ptr,
