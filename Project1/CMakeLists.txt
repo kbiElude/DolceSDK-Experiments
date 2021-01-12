@@ -10,7 +10,7 @@ endif()
 
 include("$ENV{DOLCESDK}/share/dolce.cmake" REQUIRED)
 
-project(VitaExperiments)
+project(VITAEXPERIMENTS)
 
 set(ELF "VitaExperiments.elf")
 set(SELF "VitaExperiments.bin")
@@ -34,28 +34,36 @@ ADD_DEFINITIONS(-D__vita__)
 ADD_DEFINITIONS(-D__VITA__)
 
 include_directories(${DOLCESDK}/samples/common
+                    ${VITAEXPERIMENTS_SOURCE_DIR}/include
+                    ${VITAEXPERIMENTS_SOURCE_DIR}/../Common/include
                    )
 
 link_directories(${CMAKE_CURRENT_BINARY_DIR}
                 )
 
-add_executable("${ELF}"
-               src/app.cpp
-               src/eglInstance.cpp
-               src/io.cpp
-               src/main.cpp
-               src/mutex.cpp
-               src/semaphore.cpp
-               src/thread.cpp
-              )
+add_library(Common STATIC
+            ../Common/src/eglInstance.cpp
+            ../Common/src/io.cpp
+            ../Common/src/mutex.cpp
+            ../Common/src/semaphore.cpp
+            ../Common/src/thread.cpp
+)
 
-target_link_libraries("${ELF}"
+target_link_libraries(Common
                       libScePiglet_stub
                       SceCtrl_stub
                       SceLibc_stub
                       SceLibKernel_stub
                       ScePafStdc_stub
-                      SceShaccCg_stub
+                      SceShaccCg_stub)
+
+add_executable("${ELF}"
+               src/app.cpp
+               src/main.cpp
+              )
+
+target_link_libraries("${ELF}"
+                      Common
 )
 
 dolce_create_self("${SELF}" "${ELF}")
