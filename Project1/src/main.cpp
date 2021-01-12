@@ -2,7 +2,7 @@
 
 int main(int /* argc */, char* /* argv */[])
 {
-    std::unique_ptr<App> app_ptr(new App() );
+    std::unique_ptr<FlashScreenApp> app_ptr(new FlashScreenApp() );
 
     app_ptr->run();
 

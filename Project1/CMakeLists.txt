@@ -1,18 +1,16 @@
 cmake_minimum_required(VERSION 3.0)
 
-project(VitaExperiments)
+project(FlashScreen)
 
-set(ELF "VitaExperiments.elf")
-set(SELF "VitaExperiments.bin")
+set(ELF "FlashScreen.elf")
+set(SELF "FlashScreen.bin")
 
-set(VITA_APP_NAME "Vita Experiments")
+set(VITA_APP_NAME "FlashScreen")
 set(VITA_TITLEID  "ELDK00001")
 set(VITA_VERSION  "01.00")
 
 
-include_directories(${VITAEXPERIMENTS_SOURCE_DIR}/include
-                    ${VITAEXPERIMENTS-COMMON_SOURCE_DIR}/include
-                   )
+include_directories(${VITAEXPERIMENTS-COMMON_SOURCE_DIR}/include)
 
 add_executable("${ELF}"
                src/app.cpp

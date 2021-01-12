@@ -6,10 +6,10 @@
 
 #include <memory>
 
-class App : public BaseApp
+class FlashScreenApp : public BaseApp
 {
 public:
-    App();
+    FlashScreenApp();
 
     void run() final;
 

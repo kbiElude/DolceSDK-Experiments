@@ -13,16 +13,16 @@ extern "C"
 #include "eglInstance.h"
 #include "thread.h"
 
-App::App()
+FlashScreenApp::FlashScreenApp()
     :m_must_die(false)
 {
     /* Stub */
 }
 
-int App::rendering_thread_entrypoint(void* app_raw_ptr)
+int FlashScreenApp::rendering_thread_entrypoint(void* app_raw_ptr)
 {
-    App*     app_ptr           = reinterpret_cast<App*>(app_raw_ptr);
-    uint32_t n_frames_rendered = 0;
+    FlashScreenApp* app_ptr           = reinterpret_cast<FlashScreenApp*>(app_raw_ptr);
+    uint32_t        n_frames_rendered = 0;
 
     app_ptr->m_egl_instance_ptr->bind_to_current_thread();
 
@@ -41,7 +41,7 @@ int App::rendering_thread_entrypoint(void* app_raw_ptr)
     return 0;
 }
 
-void App::run()
+void FlashScreenApp::run()
 {
     /* Set up an ES context */
     m_egl_instance_ptr = EGLInstance::create(false,  /* in_require_depth_buffer   */
@@ -51,7 +51,7 @@ void App::run()
 
     /* Spawn a separate renderer thread */
     auto renderer_thread_ptr = Thread::create_and_start("Renderer thread",
-                                                       &App::rendering_thread_entrypoint,
+                                                       &FlashScreenApp::rendering_thread_entrypoint,
                                                         this,
                                                         ThreadPriority::DEFAULT,
                                                         nullptr, /* in_opt_stack_size_ptr */

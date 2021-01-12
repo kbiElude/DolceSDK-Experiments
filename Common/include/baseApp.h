@@ -14,7 +14,6 @@ public:
 
     int  getResult();
 
-protected:
     virtual void run() = 0;
 
 private:
