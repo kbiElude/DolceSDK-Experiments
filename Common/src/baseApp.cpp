@@ -9,6 +9,7 @@ extern "C"
 }
 
 #include "baseApp.h"
+#include "logger.h"
 #include <cstdlib>
 
 BaseApp::BaseApp()
@@ -33,12 +34,22 @@ BaseApp::BaseApp()
     SCE_DBG_ASSERT(m_sce_piglet_id != 0);
     SCE_DBG_ASSERT(m_shacc_cg_id   != 0);
 
-    sceShaccCgSetMemAllocator(malloc,
-                              free);
+    ::sceShaccCgSetMemAllocator(malloc,
+                                free);
+
+    /* Set up the logger */
+    m_logger_ptr = Logger::create();
+    SCE_DBG_ASSERT(m_logger_ptr != nullptr);
+
+    m_logger_ptr->log("Base app initialized.\n");
 }
 
 BaseApp::~BaseApp()
 {
+    m_logger_ptr->log("Base app terminating.\n");
+
+    m_logger_ptr.reset();
+
     ::sceKernelExitProcess(0);
 }
 

@@ -5,14 +5,6 @@
 
 #include <memory>
 
-enum class ThreadPriority
-{
-    DEFAULT       =  0,
-    LOW           =  19,
-    HIGH          =  10,
-    TIME_CRITICAL = -20,
-};
-
 typedef int (*PFNTHREADCALLBACKPROC)(void* arg);
 
 class Thread
@@ -22,7 +14,6 @@ public:
     static std::unique_ptr<Thread> create_and_start     (const char*           in_opt_name_ptr,
                                                          PFNTHREADCALLBACKPROC in_callback_func,
                                                          void*                 in_callback_func_arg,
-                                                         const ThreadPriority& in_priority,
                                                          const int*            in_opt_stack_size_ptr,
                                                          const uint8_t&        in_cpu_affinity_mask);
     static SceUID                  get_current_thread_id();
@@ -37,7 +28,6 @@ private:
            void*                        in_callback_func_arg);
 
     bool init(const char*           in_opt_name_ptr,
-              const ThreadPriority& in_priority,
               const int*            in_opt_stack_size_ptr,
               const uint8_t&        in_cpu_affinity_mask);
 

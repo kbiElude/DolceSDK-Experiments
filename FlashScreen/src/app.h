@@ -9,7 +9,8 @@
 class FlashScreenApp : public BaseApp
 {
 public:
-    FlashScreenApp();
+     FlashScreenApp();
+    ~FlashScreenApp();
 
     void run() final;
 

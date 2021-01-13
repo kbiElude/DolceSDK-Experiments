@@ -19,6 +19,11 @@ FlashScreenApp::FlashScreenApp()
     /* Stub */
 }
 
+FlashScreenApp::~FlashScreenApp()
+{
+    /* Stub */
+}
+
 int FlashScreenApp::rendering_thread_entrypoint(void* app_raw_ptr)
 {
     FlashScreenApp* app_ptr           = reinterpret_cast<FlashScreenApp*>(app_raw_ptr);
@@ -53,7 +58,6 @@ void FlashScreenApp::run()
     auto renderer_thread_ptr = Thread::create_and_start("Renderer thread",
                                                        &FlashScreenApp::rendering_thread_entrypoint,
                                                         this,
-                                                        ThreadPriority::DEFAULT,
                                                         nullptr, /* in_opt_stack_size_ptr */
                                                         0xFF);
 

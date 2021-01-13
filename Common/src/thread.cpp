@@ -38,7 +38,6 @@ bool Thread::block_until_done(const SceUInt32* in_opt_timeout_in_microseconds_pt
 std::unique_ptr<Thread> Thread::create_and_start(const char*           in_opt_name_ptr,
                                                  PFNTHREADCALLBACKPROC in_callback_func,
                                                  void*                 in_callback_func_arg,
-                                                 const ThreadPriority& in_priority,
                                                  const int*            in_opt_stack_size_ptr,
                                                  const uint8_t&        in_cpu_affinity_mask)
 {
@@ -53,7 +52,6 @@ std::unique_ptr<Thread> Thread::create_and_start(const char*           in_opt_na
     if (result_ptr != nullptr)
     {
         if (!result_ptr->init(in_opt_name_ptr,
-                              in_priority,
                               in_opt_stack_size_ptr,
                               in_cpu_affinity_mask) )
         {
@@ -70,7 +68,6 @@ SceUID Thread::get_current_thread_id()
 }
 
 bool Thread::init(const char*                  in_opt_name_ptr,
-                  const ThreadPriority&        in_priority,
                   const int*                   in_opt_stack_size_ptr,
                   const uint8_t&               in_cpu_affinity_mask)
 {
@@ -82,7 +79,7 @@ bool Thread::init(const char*                  in_opt_name_ptr,
 
     m_thread_id = ::sceKernelCreateThread(in_opt_name_ptr,
                                           kernel_thread_entrypoint,
-                                          static_cast<SceInt32>(in_priority),
+                                          0, /* initPriority */
                                           (in_opt_stack_size_ptr != nullptr) ? *in_opt_stack_size_ptr
                                                                              :  32768,
                                           0, /* attr */
