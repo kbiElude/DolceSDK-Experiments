@@ -2,6 +2,8 @@ cmake_minimum_required(VERSION 3.0)
 
 project(VITAEXPERIMENTS-COMMON)
 
+ADD_COMPILE_OPTIONS(-Wno-psabi)
+
 include_directories(${DOLCESDK}/samples/common
                     ${DOLCESDK}/arm-dolce-eabi/include
                     ${VITAEXPERIMENTS-COMMON_SOURCE_DIR}/include

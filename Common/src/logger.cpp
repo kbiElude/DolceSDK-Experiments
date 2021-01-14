@@ -13,14 +13,16 @@ extern "C"
     #include <psp2/libdbg.h>
 }
 
-#define _1S_IN_MICROSECONDS (1000000u)
+#define _1MS_IN_MICROSECONDS (1000u)
+#define _1S_IN_MICROSECONDS  (1000000u)
+#define _1S_IN_NANOSECONDS   (1000000000u)
 
 
 Logger::Logger()
     :m_file_id (~0u),
      m_must_die(false)
 {
-    /* Stub */
+     ::sceKernelGetProcessTime(&m_start_time);
 }
 
 Logger::~Logger()
@@ -103,10 +105,23 @@ int Logger::file_logger_thread_entrypoint(void* logger_raw_ptr)
                         ++n_pending_chunk)
             {
                 const auto& current_pending_chunk = logger_ptr->m_pending_chunks_vec.at(n_pending_chunk);
+                char        timestamp[32];
+                const auto  time_delta            = current_pending_chunk.time.quad_t - logger_ptr->m_start_time.quad_t;
+                const auto  time_delta_s          = static_cast<uint32_t>((time_delta / _1S_IN_MICROSECONDS) );
+                const auto  time_delta_ms         = static_cast<uint32_t>((time_delta % _1S_IN_MICROSECONDS) / _1MS_IN_MICROSECONDS) % 1000 /* ms in 1s */;
+
+                snprintf(timestamp,
+                         sizeof(timestamp),
+                         "%02d.%03d: ",
+                         time_delta_s,
+                         time_delta_ms);
 
                 ::sceIoWrite(logger_ptr->m_file_id,
-                             current_pending_chunk.data(),
-                             static_cast<SceSize>(current_pending_chunk.size() ));
+                             timestamp,
+                             strlen(timestamp) );
+                ::sceIoWrite(logger_ptr->m_file_id,
+                             current_pending_chunk.string.data(),
+                             static_cast<SceSize>(current_pending_chunk.string.size() ));
             }
 
             logger_ptr->m_pending_chunks_vec.clear();
@@ -187,10 +202,15 @@ void Logger::log(const char* in_format,
      *       the available CPU cores.
      */
     {
-        std::unique_lock<Mutex> lock(*m_pending_chunks_vec_mutex_ptr);
+        std::unique_lock<Mutex> lock    (*m_pending_chunks_vec_mutex_ptr);
+        SceKernelSysClock       log_time;
+
+        ::sceKernelGetProcessTime(&log_time);
 
         m_pending_chunks_vec.push_back(
-            std::string(buffer, n_result_bytes)
+            Chunk(std::string(buffer,
+                              n_result_bytes),
+                  log_time)
         );
     }
 }
