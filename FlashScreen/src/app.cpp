@@ -8,7 +8,6 @@ extern "C"
     #include <psp2/shacccg.h>
 }
 
-
 #include "app.h"
 #include "eglInstance.h"
 #include "thread.h"
@@ -49,7 +48,8 @@ int FlashScreenApp::rendering_thread_entrypoint(void* app_raw_ptr)
 void FlashScreenApp::run()
 {
     /* Set up an ES context */
-    m_egl_instance_ptr = EGLInstance::create(false,  /* in_require_depth_buffer   */
+    m_egl_instance_ptr = EGLInstance::create(get_logger_ptr(),
+                                             false,  /* in_require_depth_buffer   */
                                              false); /* in_require_stencil_buffer */
 
     SCE_DBG_ASSERT(m_egl_instance_ptr != nullptr);

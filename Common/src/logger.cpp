@@ -9,8 +9,8 @@
 
 extern "C"
 {
-    #include <psp2/kernel/iofilemgr.h>
     #include <psp2/libdbg.h>
+    #include <psp2/kernel/iofilemgr.h>
 }
 
 #define _1MS_IN_MICROSECONDS (1000u)

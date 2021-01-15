@@ -14,12 +14,15 @@ extern "C"
 #include <memory>
 #include <vector>
 
+class Logger;
+
 class EGLInstance
 {
 public:
     ~EGLInstance();
 
-    static std::unique_ptr<EGLInstance> create(const bool& in_require_depth_buffer,
+    static std::unique_ptr<EGLInstance> create(Logger*     in_logger_ptr,
+                                               const bool& in_require_depth_buffer,
                                                const bool& in_require_stencil_buffer);
 
     bool bind_to_current_thread();
@@ -27,7 +30,7 @@ public:
 
 private:
     /* Private functions */
-    EGLInstance();
+    EGLInstance(Logger* in_logger_ptr);
 
     bool init(const bool& in_require_depth_buffer,
               const bool& in_require_stencil_buffer);
@@ -63,6 +66,9 @@ private:
     std::vector<EGLConfigProps> m_egl_config_vec;
     EGLContext                  m_egl_context;
     EGLSurface                  m_egl_surface;
+    Logger*                     m_logger_ptr;
+
+    bool m_never_bound;
 };
 
 #endif /* EGL_INSTANCE_H */

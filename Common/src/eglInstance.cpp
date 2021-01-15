@@ -1,6 +1,8 @@
 extern "C"
 {
     #include <psp2/libdbg.h>
+    #include <GLES2/gl2.h>
+    #include <GLES2/gl2ext.h>
 }
 
 #include <sstream>
@@ -8,12 +10,15 @@ extern "C"
 
 #include "eglInstance.h"
 #include "io.h"
+#include "logger.h"
 
-EGLInstance::EGLInstance()
+EGLInstance::EGLInstance(Logger* in_logger_ptr)
     :m_display       (nullptr),
      m_egl_config_ptr(nullptr),
      m_egl_context   (nullptr),
-     m_egl_surface   (nullptr)
+     m_egl_surface   (nullptr),
+     m_logger_ptr    (in_logger_ptr),
+     m_never_bound   (true)
 {
     /* Stub */
 }
@@ -42,17 +47,42 @@ bool EGLInstance::bind_to_current_thread()
                               m_egl_surface,
                               m_egl_context) == EGL_TRUE;
 
+    if (m_never_bound)
+    {
+        /* Log base GL info & available GL extensions. */
+        auto es_extensions_ptr = ::eglQueryString(m_display,
+                                                  EGL_EXTENSIONS);
+        auto gl_extensions_ptr = ::glGetString   (GL_EXTENSIONS);
+        auto renderer_ptr      = ::glGetString   (GL_RENDERER);
+        auto vendor_ptr        = ::glGetString   (GL_VENDOR);
+        auto version_ptr       = ::glGetString   (GL_VERSION);
+
+        m_logger_ptr->log("Renderer version: %s\n"
+                          "Renderer:         %s\n"
+                          "Vendor:           %s\n",
+                          version_ptr,
+                          renderer_ptr,
+                          vendor_ptr);
+        m_logger_ptr->log("ES Extensions:    %s\n",
+                          es_extensions_ptr);
+        m_logger_ptr->log("GL Extensions:    %s\n",
+                          gl_extensions_ptr);
+
+        m_never_bound = false;
+    }
+
     SCE_DBG_ASSERT(result);
     return result;
 }
 
-std::unique_ptr<EGLInstance> EGLInstance::create(const bool& in_require_depth_buffer,
+std::unique_ptr<EGLInstance> EGLInstance::create(Logger*     in_logger_ptr,
+                                                 const bool& in_require_depth_buffer,
                                                  const bool& in_require_stencil_buffer)
 {
     std::unique_ptr<EGLInstance> result_ptr;
 
     result_ptr.reset(
-        new EGLInstance()
+        new EGLInstance(in_logger_ptr)
     );
 
     SCE_DBG_ASSERT(result_ptr != nullptr);
@@ -201,6 +231,7 @@ bool EGLInstance::init(const bool& in_require_depth_buffer,
     /* NOTE: Do not bind the context to the calling thread. It is caller's responsibility to invoke bind()
      *       from the right thread later on.
      */
+
     return (m_egl_context != nullptr &&
             m_egl_surface != nullptr);
 }
