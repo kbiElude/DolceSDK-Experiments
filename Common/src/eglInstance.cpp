@@ -1,8 +1,6 @@
 extern "C"
 {
     #include <psp2/libdbg.h>
-    #include <GLES2/gl2.h>
-    #include <GLES2/gl2ext.h>
 }
 
 #include <sstream>
@@ -13,18 +11,20 @@ extern "C"
 #include "logger.h"
 
 EGLInstance::EGLInstance(Logger* in_logger_ptr)
-    :m_display       (nullptr),
-     m_egl_config_ptr(nullptr),
-     m_egl_context   (nullptr),
-     m_egl_surface   (nullptr),
-     m_logger_ptr    (in_logger_ptr),
-     m_never_bound   (true)
+    :m_display          (nullptr),
+     m_egl_config_ptr   (nullptr),
+     m_egl_context      (nullptr),
+     m_egl_surface      (nullptr),
+     m_gl_extensions_ptr(nullptr),
+     m_logger_ptr       (in_logger_ptr),
+     m_never_bound      (true)
 {
     /* Stub */
 }
 
 EGLInstance::~EGLInstance()
 {
+
     if (m_egl_context != nullptr)
     {
         ::eglDestroyContext(m_display,
@@ -52,10 +52,11 @@ bool EGLInstance::bind_to_current_thread()
         /* Log base GL info & available GL extensions. */
         auto es_extensions_ptr = ::eglQueryString(m_display,
                                                   EGL_EXTENSIONS);
-        auto gl_extensions_ptr = ::glGetString   (GL_EXTENSIONS);
         auto renderer_ptr      = ::glGetString   (GL_RENDERER);
         auto vendor_ptr        = ::glGetString   (GL_VENDOR);
         auto version_ptr       = ::glGetString   (GL_VERSION);
+
+        m_gl_extensions_ptr = reinterpret_cast<const char*>(::glGetString(GL_EXTENSIONS) );
 
         m_logger_ptr->log("Renderer version: %s\n"
                           "Renderer:         %s\n"
@@ -66,12 +67,110 @@ bool EGLInstance::bind_to_current_thread()
         m_logger_ptr->log("ES Extensions:    %s\n",
                           es_extensions_ptr);
         m_logger_ptr->log("GL Extensions:    %s\n",
-                          gl_extensions_ptr);
+                          m_gl_extensions_ptr);
 
+        /* Init extension entrypoints */
+        if (strstr(m_gl_extensions_ptr,
+                   "GL_EXT_draw_instanced") != nullptr)
+        {
+            const ExtensionEntrypoint entrypoints[] =
+            {
+                {"glDrawArraysInstancedEXT",   reinterpret_cast<void**>(&m_entrypoints_gl_ext_draw_instanced.glDrawArraysInstancedEXT)},
+                {"glDrawElementsInstancedEXT", reinterpret_cast<void**>(&m_entrypoints_gl_ext_draw_instanced.glDrawElementsInstancedEXT)},
+            };
+
+            if (!init_extension_entrypoints(entrypoints,
+                                            sizeof(entrypoints) / sizeof(entrypoints[0])) )
+            {
+                SCE_DBG_ASSERT(false);
+
+                result = false;
+                goto end;
+            }
+        }
+
+        if (strstr(m_gl_extensions_ptr,
+                   "GL_EXT_instanced_arrays") != nullptr)
+        {
+            const ExtensionEntrypoint entrypoints[] =
+            {
+                {"glDrawArraysInstancedEXT",   reinterpret_cast<void**>(&m_entrypoints_gl_ext_instanced_arrays.glDrawArraysInstancedEXT)},
+                {"glDrawElementsInstancedEXT", reinterpret_cast<void**>(&m_entrypoints_gl_ext_instanced_arrays.glDrawElementsInstancedEXT)},
+                {"glVertexAttribDivisorEXT",   reinterpret_cast<void**>(&m_entrypoints_gl_ext_instanced_arrays.glVertexAttribDivisorEXT)},
+            };
+
+            if (!init_extension_entrypoints(entrypoints,
+                                            sizeof(entrypoints) / sizeof(entrypoints[0])) )
+            {
+                SCE_DBG_ASSERT(false);
+
+                result = false;
+                goto end;
+            }
+        }
+
+        if (strstr(m_gl_extensions_ptr,
+                   "GL_EXT_texture_storage") != nullptr)
+        {
+            const ExtensionEntrypoint entrypoints[] =
+            {
+                {"glTexStorage2DEXT", reinterpret_cast<void**>(&m_entrypoints_gl_ext_texture_storage.glTexStorage2DEXT)},
+            };
+
+            if (!init_extension_entrypoints(entrypoints,
+                                            sizeof(entrypoints) / sizeof(entrypoints[0])) )
+            {
+                SCE_DBG_ASSERT(false);
+
+                result = false;
+                goto end;
+            }
+        }
+
+        if (strstr(m_gl_extensions_ptr,
+                   "GL_SCE_piglet_shader_binary") != nullptr)
+        {
+            const ExtensionEntrypoint entrypoints[] =
+            {
+                {"glPigletGetShaderBinarySCE", reinterpret_cast<void**>(&m_entrypoints_gl_sce_piglet_shader_binary.glPigletGetShaderBinarySCE) },
+            };
+
+            if (!init_extension_entrypoints(entrypoints,
+                                            sizeof(entrypoints) / sizeof(entrypoints[0])) )
+            {
+                SCE_DBG_ASSERT(false);
+
+                result = false;
+                goto end;
+            }
+        }
+
+        if (strstr(m_gl_extensions_ptr,
+                   "GL_SCE_texture_resource") != nullptr)
+        {
+            const ExtensionEntrypoint entrypoints[] =
+            {
+                {"glMapTextureResourceSCE",   reinterpret_cast<void**>(&m_entrypoints_gl_sce_texture_resource_entrypoints.glMapTextureResourceSCE)},
+                {"glTexImageResourceSCE",     reinterpret_cast<void**>(&m_entrypoints_gl_sce_texture_resource_entrypoints.glTexImageResourceSCE)},
+                {"glUnmapTextureResourceSCE", reinterpret_cast<void**>(&m_entrypoints_gl_sce_texture_resource_entrypoints.glUnmapTextureResourceSCE)},
+            };
+
+            if (!init_extension_entrypoints(entrypoints,
+                                            sizeof(entrypoints) / sizeof(entrypoints[0])) )
+            {
+                SCE_DBG_ASSERT(false);
+
+                result = false;
+                goto end;
+            }
+        }
+
+        /* Done */
         m_never_bound = false;
     }
 
     SCE_DBG_ASSERT(result);
+end:
     return result;
 }
 
@@ -98,6 +197,31 @@ std::unique_ptr<EGLInstance> EGLInstance::create(Logger*     in_logger_ptr,
     }
 
     return result_ptr;
+}
+
+const EXTDrawInstancedEntrypoints* EGLInstance::get_ext_draw_instanced_entrypoints_ptr() const
+{
+    return &m_entrypoints_gl_ext_draw_instanced;
+}
+
+const EXTInstancedArraysEntrypoints* EGLInstance::get_ext_instanced_arrays_entrypoints_ptr() const
+{
+    return &m_entrypoints_gl_ext_instanced_arrays;
+}
+
+const EXTTextureStorageEntrypoints* EGLInstance::get_ext_texture_storage_entrypoints_ptr() const
+{
+    return &m_entrypoints_gl_ext_texture_storage;
+}
+
+const SCEPigletShaderBinaryEntrypoints* EGLInstance::get_sce_piglet_shader_binary_entrypoints_ptr() const
+{
+    return &m_entrypoints_gl_sce_piglet_shader_binary;
+}
+
+const SCETextureResourceEntrypoints* EGLInstance::get_sce_texture_resource_entrypoints_ptr() const
+{
+    return &m_entrypoints_gl_sce_texture_resource_entrypoints;
 }
 
 bool EGLInstance::init(const bool& in_require_depth_buffer,
@@ -234,6 +358,32 @@ bool EGLInstance::init(const bool& in_require_depth_buffer,
 
     return (m_egl_context != nullptr &&
             m_egl_surface != nullptr);
+}
+
+bool EGLInstance::init_extension_entrypoints(const ExtensionEntrypoint* in_ext_entrypoint_ptr,
+                                             const uint32_t&            in_n_ext_entrypoints)
+{
+    bool result = false;
+
+    for (uint32_t n_entrypoint = 0;
+                  n_entrypoint < in_n_ext_entrypoints;
+                ++n_entrypoint)
+    {
+        const auto& current_entrypoint = in_ext_entrypoint_ptr[n_entrypoint];
+
+        *current_entrypoint.func_ptr_ptr = reinterpret_cast<void*>(::eglGetProcAddress(current_entrypoint.func_name_ptr) );
+
+        if (*current_entrypoint.func_ptr_ptr == nullptr)
+        {
+            SCE_DBG_ASSERT(false);
+
+            goto end;
+        }
+    }
+
+    result = true;
+end:
+    return result;
 }
 
 void EGLInstance::swap_buffers()
