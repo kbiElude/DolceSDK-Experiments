@@ -14,6 +14,8 @@ add_library(Common STATIC
             src/EGL/eglInstance.cpp
             src/ES/renderbuffer.cpp
             src/ES/renderbuffer_create_info.cpp
+            src/ES/texture.cpp
+            src/ES/texture_create_info.cpp
             src/OS/event.cpp
             src/io.cpp
             src/logger.cpp
