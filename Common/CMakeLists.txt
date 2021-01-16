@@ -10,14 +10,16 @@ include_directories(${DOLCESDK}/samples/common
                    )
 
 add_library(Common STATIC
-            ../Common/src/baseApp.cpp
-            ../Common/src/EGL/eglInstance.cpp
-            ../Common/src/OS/event.cpp
-            ../Common/src/io.cpp
-            ../Common/src/logger.cpp
-            ../Common/src/OS/mutex.cpp
-            ../Common/src/OS/semaphore.cpp
-            ../Common/src/OS/thread.cpp
+            src/baseApp.cpp
+            src/EGL/eglInstance.cpp
+            src/ES/renderbuffer.cpp
+            src/ES/renderbuffer_create_info.cpp
+            src/OS/event.cpp
+            src/io.cpp
+            src/logger.cpp
+            src/OS/mutex.cpp
+            src/OS/semaphore.cpp
+            src/OS/thread.cpp
 )
 
 target_link_libraries(Common
