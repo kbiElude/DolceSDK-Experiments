@@ -6,7 +6,7 @@ extern "C"
 #include <sstream>
 #include <vector>
 
-#include "eglInstance.h"
+#include "EGL/eglInstance.h"
 #include "io.h"
 #include "logger.h"
 

@@ -4,7 +4,7 @@ extern "C"
     #include <psp2/libdbg.h>
 }
 
-#include "event.h"
+#include "OS/event.h"
 
 #include <memory>
 

@@ -1,7 +1,7 @@
-#include "event.h"
+#include "OS/event.h"
+#include "OS/mutex.h"
+#include "OS/thread.h"
 #include "logger.h"
-#include "mutex.h"
-#include "thread.h"
 
 #include <cstdarg>
 #include <mutex>

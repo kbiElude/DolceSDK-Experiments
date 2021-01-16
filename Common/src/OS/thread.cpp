@@ -1,4 +1,4 @@
-#include "thread.h"
+#include "OS/thread.h"
 
 extern "C"
 {

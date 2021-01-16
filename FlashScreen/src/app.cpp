@@ -9,8 +9,8 @@ extern "C"
 }
 
 #include "app.h"
-#include "eglInstance.h"
-#include "thread.h"
+#include "EGL/eglInstance.h"
+#include "OS/thread.h"
 
 FlashScreenApp::FlashScreenApp()
     :m_must_die(false)

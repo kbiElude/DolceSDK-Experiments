@@ -2,7 +2,7 @@
 #define APP_H
 
 #include "baseApp.h"
-#include "eglInstance.h"
+#include "EGL/eglInstance.h"
 
 #include <memory>
 
