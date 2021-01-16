@@ -21,6 +21,15 @@ enum class TextureFormat
     RGB16F             = GL_RGB16F_EXT,             //< GL_OES_texture_half_float
 
     BGRA8              = GL_BGRA8_EXT,              //< GL_EXT_texture_format_BGRA8888
+
+    COMPRESSED_RGB_RGB_S3TC_DXT1  = GL_COMPRESSED_RGB_S3TC_DXT1_EXT,  //< GL_EXT_texture_compression_dxt1
+    COMPRESSED_RGBA_RGB_S3TC_DXT1 = GL_COMPRESSED_RGBA_S3TC_DXT1_EXT, //< GL_EXT_texture_compression_dxt1
+
+    COMPRESSED_RGBA_S3TC_DXT3       = GL_COMPRESSED_RGBA_S3TC_DXT3_EXT,       //< ? GL_EXT_texture_compression_dxt3 == GL_EXT_texture_compression_s3tc      ?
+    COMPRESSED_SRGB_ALPHA_S3TC_DXT3 = GL_COMPRESSED_SRGB_ALPHA_S3TC_DXT3_EXT, //< ? GL_EXT_texture_compression_dxt3 == GL_EXT_texture_compression_s3tc_srgb ?
+
+    COMPRESSED_RGBA_S3TC_DXT5       = GL_COMPRESSED_RGBA_S3TC_DXT5_EXT,       //< ? GL_EXT_texture_compression_dxt5 == GL_EXT_texture_compression_s3tc      ?
+    COMPRESSED_SRGB_ALPHA_S3TC_DXT5 = GL_COMPRESSED_SRGB_ALPHA_S3TC_DXT5_EXT, //< ? GL_EXT_texture_compression_dxt5 == GL_EXT_texture_compression_s3tc_srgb ?
 };
 
 enum class TextureMagFilter
