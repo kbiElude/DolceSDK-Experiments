@@ -17,11 +17,16 @@ public:
 
     ~Texture();
 
+    const TextureCreateInfo* get_create_info_ptr() const
+    {
+        return m_create_info_ptr.get();
+    }
+
     const GLuint& get_texture_id() const
     {
         return m_texture_id;
     }
-    
+
 private:
     /* Private functions */
     Texture(const EGLInstance*                 in_egl_instance_ptr,
