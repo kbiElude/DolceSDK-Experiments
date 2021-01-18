@@ -16,6 +16,8 @@ add_library(Common STATIC
             src/ES/framebuffer_create_info.cpp
             src/ES/renderbuffer.cpp
             src/ES/renderbuffer_create_info.cpp
+            src/ES/shader.cpp
+            src/ES/shader_create_info.cpp
             src/ES/texture.cpp
             src/ES/texture_create_info.cpp
             src/OS/event.cpp
