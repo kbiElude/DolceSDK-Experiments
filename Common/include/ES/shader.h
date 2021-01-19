@@ -16,6 +16,15 @@ public:
 
     ~Shader();
 
+    const ShaderCreateInfo* get_create_info_ptr() const
+    {
+        return m_create_info_ptr.get();
+    }
+
+    const GLuint& get_shader_id() const
+    {
+        return m_shader_id;
+    }
 private:
     /* Private functions */
 
