@@ -106,7 +106,8 @@ bool Program::init()
 
                 info_log += "\n<<\n";
 
-                m_logger_ptr->log(info_log.data() );
+                m_logger_ptr->log(true, /* in_flush_and_wait */
+                                  info_log.data() );
 
                 SCE_DBG_ASSERT(false);
                 goto end;
@@ -114,7 +115,8 @@ bool Program::init()
         }
         else
         {
-            m_logger_ptr->log("Program [%s] compiled successfully.\n",
+            m_logger_ptr->log(false, /* in_flush_and_wait */
+                              "Program [%s] compiled successfully.\n",
                               m_create_info_ptr->get_name() );
         }
     }

@@ -177,7 +177,8 @@ end:
     return result;
 }
 
-void Logger::log(const char* in_format,
+void Logger::log(const bool& in_flush_and_wait,
+                 const char* in_format,
                  ...)
 {
     char    buffer[1024];
@@ -212,5 +213,22 @@ void Logger::log(const char* in_format,
                               n_result_bytes),
                   log_time)
         );
+    }
+
+    if (in_flush_and_wait)
+    {
+        while (true)
+        {
+            {
+                std::unique_lock<Mutex> lock(*m_pending_chunks_vec_mutex_ptr);
+
+                if (m_pending_chunks_vec.size() == 0)
+                {
+                    break;
+                }
+            }
+
+            ::sceKernelDelayThread(_1S_IN_MICROSECONDS / 60 /* polls per sec */);
+        }
     }
 }

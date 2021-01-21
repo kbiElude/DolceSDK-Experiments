@@ -58,7 +58,8 @@ bool EGLInstance::bind_to_current_thread()
 
         m_gl_extensions_ptr = reinterpret_cast<const char*>(::glGetString(GL_EXTENSIONS) );
 
-        m_logger_ptr->log("Renderer version: %s\n"
+        m_logger_ptr->log(false, /* in_flush_and_wait */
+                          "Renderer version: %s\n"
                           "Renderer:         %s\n"
                           "Vendor:           %s\n",
                           version_ptr,

@@ -74,14 +74,14 @@ bool Shader::init()
             goto end;
         }
 
-        case ShaderSource::CG:
+        case ShaderSource::GLSL:
         {
-            const char* cg_ptr         = m_create_info_ptr->get_cg();
             GLint       compile_status = 0;
+            const char* glsl_ptr       = m_create_info_ptr->get_glsl();
 
             ::glShaderSource(m_shader_id,
                              1,                          /* count */
-                            &cg_ptr,
+                            &glsl_ptr,
                              nullptr);                   /* length */
 
             ::glCompileShader(m_shader_id);
@@ -93,10 +93,9 @@ bool Shader::init()
             {
                 GLsizei n_bytes_needed_minus_terminator = 0;
 
-                ::glGetShaderInfoLog(m_shader_id,
-                                     0,                              /* bufSize */
-                                    &n_bytes_needed_minus_terminator,
-                                     nullptr);                       /* infoLog */
+                ::glGetShaderiv(m_shader_id,
+                                GL_INFO_LOG_LENGTH,
+                               &n_bytes_needed_minus_terminator);
 
                 SCE_DBG_ASSERT(n_bytes_needed_minus_terminator);
                 if (n_bytes_needed_minus_terminator > 0)
@@ -108,8 +107,8 @@ bool Shader::init()
 
                     ::glGetShaderInfoLog(m_shader_id,
                                          static_cast<GLsizei>(info_log.size() ),
-                                        &n_bytes_needed_minus_terminator,
-                                         reinterpret_cast<GLchar*>(const_cast<char*>(info_log.data() )));
+                                         nullptr, /*length */
+                                         reinterpret_cast<GLchar*>(&info_log[0]));
 
                     info_log_prefix = "Shader [" + std::string(m_create_info_ptr->get_name() ) + "] failed to compile:\n>>>\n";
 
@@ -118,7 +117,8 @@ bool Shader::init()
 
                     info_log += "\n<<\n";
 
-                    m_logger_ptr->log(info_log.data() );
+                    m_logger_ptr->log(true, /* in_flush_and_wait */
+                                      info_log.data() );
 
                     SCE_DBG_ASSERT(false);
                     goto end;
@@ -126,7 +126,8 @@ bool Shader::init()
             }
             else
             {
-                m_logger_ptr->log("Shader [%s] compiled successfully.\n",
+                m_logger_ptr->log(true, /* in_flush_and_wait */
+                                  "Shader [%s] compiled successfully.\n",
                                   m_create_info_ptr->get_name() );
             }
 

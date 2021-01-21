@@ -41,12 +41,14 @@ BaseApp::BaseApp()
     m_logger_ptr = Logger::create();
     SCE_DBG_ASSERT(m_logger_ptr != nullptr);
 
-    m_logger_ptr->log("Base app initialized.\n");
+    m_logger_ptr->log(false, /* in_flush_and_wait */
+                      "Base app initialized.\n");
 }
 
 BaseApp::~BaseApp()
 {
-    m_logger_ptr->log("Base app terminating.\n");
+    m_logger_ptr->log(false, /* in_flush_and_wait */
+                      "Base app terminating.\n");
 
     m_logger_ptr.reset();
 

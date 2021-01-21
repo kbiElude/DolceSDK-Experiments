@@ -11,8 +11,8 @@ class Shader
 {
 public:
     /* Public functions */
-    std::unique_ptr<Shader> create(std::unique_ptr<ShaderCreateInfo> in_create_info_ptr,
-                                   Logger*                           in_logger_ptr);
+    static std::unique_ptr<Shader> create(std::unique_ptr<ShaderCreateInfo> in_create_info_ptr,
+                                          Logger*                           in_logger_ptr);
 
     ~Shader();
 

@@ -12,7 +12,7 @@ extern "C"
 enum class ShaderSource
 {
     BLOB,
-    CG,
+    GLSL,
 
     UNKNOWN
 };
@@ -29,22 +29,22 @@ class ShaderCreateInfo
 {
 public:
     /* Public functions */
-    std::unique_ptr<ShaderCreateInfo> create_from_cg(const char*       in_name_ptr,
-                                                     const ShaderType& in_type,
-                                                     const char*       in_shader_code_ptr);
+    static std::unique_ptr<ShaderCreateInfo> create_from_glsl(const char*       in_name_ptr,
+                                                              const ShaderType& in_type,
+                                                              const char*       in_shader_code_ptr);
 
     ~ShaderCreateInfo();
 
-    const char* get_cg() const
+    const char* get_glsl() const
     {
-        SCE_DBG_ASSERT(m_source == ShaderSource::CG);
+        SCE_DBG_ASSERT(m_source == ShaderSource::GLSL);
 
-        return m_cg.data();
+        return m_glsl.c_str();
     }
 
     const char* get_name() const
     {
-        return m_name.data();
+        return m_name.c_str();
     }
 
     const ShaderSource& get_source() const
@@ -66,7 +66,7 @@ private:
                      const void*         in_data_ptr);
 
     /* Private variables */
-    std::string  m_cg;
+    std::string  m_glsl;
     std::string  m_name;
     ShaderSource m_source;
     ShaderType   m_type;

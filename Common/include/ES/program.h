@@ -16,6 +16,11 @@ public:
 
     ~Program();
 
+    const GLuint& get_program_id() const
+    {
+        return m_program_id;
+    }
+
 private:
     /* Private functions */
 

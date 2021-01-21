@@ -10,6 +10,10 @@ extern "C"
 
 #include "app.h"
 #include "EGL/eglInstance.h"
+#include "ES/program.h"
+#include "ES/program_create_info.h"
+#include "ES/shader.h"
+#include "ES/shader_create_info.h"
 #include "OS/thread.h"
 
 FullScreenPassApp::FullScreenPassApp()
@@ -30,12 +34,78 @@ int FullScreenPassApp::rendering_thread_entrypoint(void* app_raw_ptr)
 
     app_ptr->m_egl_instance_ptr->bind_to_current_thread();
 
+    /* Set up program */
+    std::unique_ptr<Program> program_ptr;
+
+    {
+        const char* fs_glsl = "#version 100\n"
+                              "\n"
+                              "varying mediump vec2 uv;\n"
+                              "\n"
+                              "void main()\n"
+                              "{\n"
+                              "    gl_FragColor = vec4(uv.x, uv.y, (uv.x + uv.y) * 0.5, 1.0);\n"
+                              "}\n";
+
+        const char* vs_glsl = "#version 100\n"
+                              "\n"
+                              "varying mediump vec2 uv;\n"
+                              "\n"
+                              "void main()\n"
+                              "{\n"
+                              "    float x = -1.0 + float( (gl_VertexID & 1) << 2);\n"
+                              "    float y = -1.0 + float( (gl_VertexID & 2) << 1);\n"
+                              "\n"
+                              "    uv.x = (x + 1.0) * 0.5;\n"
+                              "    uv.y = (y + 1.0) * 0.5;\n"
+                              "\n"
+                              "    gl_Position = vec4(x, y, 0.0, 1.0);\n"
+                              "}\n";
+
+        std::unique_ptr<Shader> fs_ptr;
+        std::unique_ptr<Shader> vs_ptr;
+
+        {
+            auto fs_create_info_ptr = ShaderCreateInfo::create_from_glsl("FS",
+                                                                         ShaderType::FRAGMENT,
+                                                                         fs_glsl);
+            SCE_DBG_ASSERT(fs_create_info_ptr != nullptr);
+
+            fs_ptr = Shader::create(std::move(fs_create_info_ptr),
+                                    app_ptr->get_logger_ptr() );
+            SCE_DBG_ASSERT(fs_ptr != nullptr);
+        }
+
+        {
+            auto vs_create_info_ptr = ShaderCreateInfo::create_from_glsl("VS",
+                                                                         ShaderType::VERTEX,
+                                                                         vs_glsl);
+            SCE_DBG_ASSERT(vs_create_info_ptr != nullptr);
+
+            vs_ptr = Shader::create(std::move(vs_create_info_ptr),
+                                    app_ptr->get_logger_ptr() );
+            SCE_DBG_ASSERT(vs_ptr != nullptr);
+        }
+
+        {
+            auto program_create_info_ptr = ProgramCreateInfo::create("Program",
+                                                                     fs_ptr.get(),
+                                                                     vs_ptr.get() );
+
+            program_ptr = Program::create(std::move(program_create_info_ptr),
+                                          app_ptr->get_logger_ptr() );
+            SCE_DBG_ASSERT(program_ptr != nullptr);
+        }
+    }
+
     while (!app_ptr->m_must_die)
     {
         const float intensity = static_cast<float>(n_frames_rendered % 256) / 255.0f;
 
-        ::glClearColor(intensity, intensity, intensity, 1.0f);
-        ::glClear     (GL_COLOR_BUFFER_BIT);
+        ::glUseProgram(program_ptr->get_program_id() );
+        ::glDrawArrays(GL_TRIANGLES,
+                       0, /* first */
+                       3); /* count */
 
         app_ptr->m_egl_instance_ptr->swap_buffers();
 

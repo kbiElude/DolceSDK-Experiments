@@ -23,7 +23,8 @@ public:
      Logger();
     ~Logger();
 
-    void log(const char* in_format,
+    void log(const bool& in_flush_and_wait,
+             const char* in_format,
              ...);
 
 private:

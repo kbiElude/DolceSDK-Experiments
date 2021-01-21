@@ -15,9 +15,9 @@ class ProgramCreateInfo
 {
 public:
     /* Public functions */
-    std::unique_ptr<ProgramCreateInfo> create(const char*   in_name_ptr,
-                                              const Shader* in_vs_ptr,
-                                              const Shader* in_fs_ptr);
+    static std::unique_ptr<ProgramCreateInfo> create(const char*   in_name_ptr,
+                                                     const Shader* in_vs_ptr,
+                                                     const Shader* in_fs_ptr);
 
     ~ProgramCreateInfo();
 
