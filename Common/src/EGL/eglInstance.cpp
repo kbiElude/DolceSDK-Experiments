@@ -65,9 +65,11 @@ bool EGLInstance::bind_to_current_thread()
                           version_ptr,
                           renderer_ptr,
                           vendor_ptr);
-        m_logger_ptr->log("ES Extensions:    %s\n",
+        m_logger_ptr->log(false, /* in_flush_and_wait */
+                          "ES Extensions:    %s\n",
                           es_extensions_ptr);
-        m_logger_ptr->log("GL Extensions:    %s\n",
+        m_logger_ptr->log(false, /* in_flush_and_wait */
+                          "GL Extensions:    %s\n",
                           m_gl_extensions_ptr);
 
         /* Init extension entrypoints */

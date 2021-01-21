@@ -6,6 +6,7 @@ extern "C"
 {
     #include <GLES2/gl2.h>
     #include <psp2/libdbg.h>
+    #include <psp2/shacccg.h>
 }
 
 #include <vector>
@@ -72,6 +73,79 @@ bool Shader::init()
             SCE_DBG_ASSERT(false);
 
             goto end;
+        }
+
+        case ShaderSource::CG:
+        {
+            SceShaccCgCallbackList         callback_list;
+            SceShaccCgCompileOptions       cg_options;
+            const auto                     glsl_ptr      = m_create_info_ptr->get_cg();
+            const SceShaccCgCompileOutput* result_ptr    = nullptr;
+
+            ::sceShaccCgInitializeCompileOptions(&cg_options);
+            ::sceShaccCgInitializeCallbackList  (&callback_list,
+                                                 SCE_SHACCCG_TRIVIAL);
+
+            cg_options.mainSourceFile = "shader";
+            cg_options.targetProfile  = (m_create_info_ptr->get_type() == ShaderType::FRAGMENT) ? SCE_SHACCCG_PROFILE_FP
+                                                                                                : SCE_SHACCCG_PROFILE_VP;
+
+            callback_list.openFile =
+            [](const char*                     in_file_name_ptr,
+               const SceShaccCgSourceLocation* /* in_include_from_ptr    */,
+               const SceShaccCgCompileOptions* /* in_compile_options_ptr */,
+               void*                           in_user_data_ptr,
+               const char**                    /* in_error_string_ptr    */)
+            {
+               SceShaccCgSourceFile* result_ptr = reinterpret_cast<SceShaccCgSourceFile*>(malloc(sizeof(SceShaccCgSourceFile) ));
+
+               result_ptr->fileName = in_file_name_ptr;
+               result_ptr->size     = strlen                       (reinterpret_cast<const char*>(in_user_data_ptr) );
+               result_ptr->text     = reinterpret_cast<const char*>(in_user_data_ptr);
+
+               return result_ptr;
+            };
+
+            callback_list.releaseFile =
+            [](const SceShaccCgSourceFile*     in_file_name_ptr,
+               const SceShaccCgCompileOptions* in_compile_options_ptr,
+               void*                           in_user_data_ptr)
+            {
+                free(reinterpret_cast<void*>(const_cast<SceShaccCgSourceFile*>(in_file_name_ptr)));
+            };
+
+            result_ptr = ::sceShaccCgCompileProgram(&cg_options,
+                                                    &callback_list,
+                                                     reinterpret_cast<void*>(const_cast<char*>(glsl_ptr) ) );
+            SCE_DBG_ASSERT(result_ptr != nullptr);
+
+            log_cg_diagnostics(result_ptr->diagnosticCount,
+                               result_ptr->diagnostics);
+
+            if (result_ptr->programSize > 0)
+            {
+                m_logger_ptr->log(false, /* in_Flush_and_wait */
+                                  "Shader [%s] has been compiled successfully\n",
+                                  m_create_info_ptr->get_name() );
+
+                ::glShaderBinary(1, /* count */
+                                &m_shader_id,
+                                 0, /* binaryformat */
+                                 result_ptr->programData,
+                                 result_ptr->programSize);
+            }
+            else
+            {
+                m_logger_ptr->log(true, /* in_Flush_and_wait */
+                                  "Shader [%s] failed to compile.\n",
+                                  m_create_info_ptr->get_name() );
+
+                SCE_DBG_ASSERT(result_ptr->programSize > 0);
+
+                goto end;
+            }
+
+            break;
         }
 
         case ShaderSource::GLSL:
@@ -145,4 +219,60 @@ bool Shader::init()
     result = true;
 end:
     return result;
+}
+
+void Shader::log_cg_diagnostics(const int&                         in_n_diagnostics,
+                                const SceShaccCgDiagnosticMessage* in_diagnostics_ptr) const
+{
+    bool errors_encountered = false;
+
+    if (in_n_diagnostics == 0)
+    {
+        goto end;
+    }
+
+    m_logger_ptr->log(false, /* in_flush_and_wait */
+                      "Shader [%s] diagnostics:\n>>\n",
+                      m_create_info_ptr->get_name() );
+
+    for (uint32_t n_current_diagnostic = 0;
+                  n_current_diagnostic < in_n_diagnostics;
+                ++n_current_diagnostic)
+    {
+        const auto& current_diagnostic = in_diagnostics_ptr[n_current_diagnostic];
+        const char* current_level_ptr  = nullptr;
+
+        switch (current_diagnostic.level)
+        {
+            case SceShaccCgDiagnosticLevel::SCE_SHACCCG_DIAGNOSTIC_LEVEL_ERROR:
+            {
+                current_level_ptr  = "Error";
+                errors_encountered = true;
+
+                break;
+            }
+
+            case SceShaccCgDiagnosticLevel::SCE_SHACCCG_DIAGNOSTIC_LEVEL_INFO:    current_level_ptr = "Info";    break;
+            case SceShaccCgDiagnosticLevel::SCE_SHACCCG_DIAGNOSTIC_LEVEL_WARNING: current_level_ptr = "Warning"; break;
+
+            default:
+            {
+                SCE_DBG_ASSERT(false);
+
+                current_level_ptr = "!?";
+            }
+        }
+
+        m_logger_ptr->log(false, /* in_flush_and_wait */
+                          "%s (%d:%d): %s\n",
+                          current_level_ptr,
+                          static_cast<int>(current_diagnostic.location->lineNumber),
+                          static_cast<int>(current_diagnostic.location->columnNumber),
+                          current_diagnostic.message);
+    }
+
+    m_logger_ptr->log(errors_encountered,
+                      "<<\n",nullptr);
+end:
+    ;
 }

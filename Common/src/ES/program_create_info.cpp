@@ -5,7 +5,7 @@ ProgramCreateInfo::ProgramCreateInfo(const char*   in_name_ptr,
                                      const Shader* in_fs_ptr)
     :m_fs_ptr(in_fs_ptr),
      m_name  (in_name_ptr),
-     m_vs_ptr(in_fs_ptr)
+     m_vs_ptr(in_vs_ptr)
 {
     /* Stub */
 }

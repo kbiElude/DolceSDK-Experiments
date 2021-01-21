@@ -81,10 +81,9 @@ bool Program::init()
         {
             GLsizei n_bytes_needed_minus_terminator = 0;
 
-            ::glGetProgramInfoLog(m_program_id,
-                                  0,                              /* bufSize */
-                                 &n_bytes_needed_minus_terminator,
-                                  nullptr);                       /* infoLog */
+            ::glGetProgramiv(m_program_id,
+                             GL_INFO_LOG_LENGTH,
+                            &n_bytes_needed_minus_terminator);
 
             SCE_DBG_ASSERT(n_bytes_needed_minus_terminator);
             if (n_bytes_needed_minus_terminator > 0)
@@ -96,27 +95,30 @@ bool Program::init()
 
                 ::glGetProgramInfoLog(m_program_id,
                                       static_cast<GLsizei>(info_log.size() ),
-                                     &n_bytes_needed_minus_terminator,
-                                      reinterpret_cast<GLchar*>(const_cast<char*>(info_log.data() )));
-
-                info_log_prefix = "Program [" + std::string(m_create_info_ptr->get_name() ) + "] failed to link:\n>>>\n";
-
-                info_log.insert(0,
-                                info_log_prefix);
-
-                info_log += "\n<<\n";
+                                      nullptr, /* length */
+                                      reinterpret_cast<GLchar*>(&info_log[0]));
 
                 m_logger_ptr->log(true, /* in_flush_and_wait */
-                                  info_log.data() );
+                                  "Program [%s] failed to link:\n>>\n%s\n<<\n",
+                                  m_create_info_ptr->get_name(),
+                                  info_log.data              () );
 
                 SCE_DBG_ASSERT(false);
+                goto end;
+            }
+            else
+            {
+                m_logger_ptr->log(true, /* in_flush_and_wait */
+                                  "Program [%s] failed to link.\n",
+                                  m_create_info_ptr->get_name() );
+
                 goto end;
             }
         }
         else
         {
             m_logger_ptr->log(false, /* in_flush_and_wait */
-                              "Program [%s] compiled successfully.\n",
+                              "Program [%s] was linked successfully.\n",
                               m_create_info_ptr->get_name() );
         }
     }

@@ -4,8 +4,9 @@
 #include <GLES2/gl2.h>
 #include <memory>
 
-class Logger;
-class ShaderCreateInfo;
+class  Logger;
+struct SceShaccCgDiagnosticMessage;
+class  ShaderCreateInfo;
 
 class Shader
 {
@@ -31,7 +32,9 @@ private:
     Shader(std::unique_ptr<ShaderCreateInfo> in_create_info_ptr,
            Logger*                           in_logger_ptr);
 
-    bool init();
+    bool init              ();
+    void log_cg_diagnostics(const int&                         in_n_diagnostics,
+                            const SceShaccCgDiagnosticMessage* in_diagnostics_ptr) const;
 
     /* Private variables */
     std::unique_ptr<ShaderCreateInfo> m_create_info_ptr;

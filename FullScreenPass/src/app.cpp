@@ -38,37 +38,31 @@ int FullScreenPassApp::rendering_thread_entrypoint(void* app_raw_ptr)
     std::unique_ptr<Program> program_ptr;
 
     {
-        const char* fs_glsl = "#version 100\n"
-                              "\n"
-                              "varying mediump vec2 uv;\n"
-                              "\n"
-                              "void main()\n"
+        const char* fs_glsl = "float4 main(float2 in_uv : TEXCOORD0)\n"
                               "{\n"
-                              "    gl_FragColor = vec4(uv.x, uv.y, (uv.x + uv.y) * 0.5, 1.0);\n"
+                              "    return float4(in_uv.x, in_uv.y, (in_uv.x + in_uv.y) * 0.5, 1.0);\n"
                               "}\n";
 
-        const char* vs_glsl = "#version 100\n"
-                              "\n"
-                              "varying mediump vec2 uv;\n"
-                              "\n"
-                              "void main()\n"
+        const char* vs_glsl = "void main(int        in_n_vertex,\n"
+                              "          float4 out out_position : POSITION,\n"
+                              "          float2 out out_uv       : TEXCOORD0)\n"
                               "{\n"
-                              "    float x = -1.0 + float( (gl_VertexID & 1) << 2);\n"
-                              "    float y = -1.0 + float( (gl_VertexID & 2) << 1);\n"
+                              "    float x = -1.0 + float( (in_n_vertex & 1) << 2);\n"
+                              "    float y = -1.0 + float( (in_n_vertex & 2) << 1);\n"
                               "\n"
-                              "    uv.x = (x + 1.0) * 0.5;\n"
-                              "    uv.y = (y + 1.0) * 0.5;\n"
+                              "    out_uv.x = (x + 1.0) * 0.5;\n"
+                              "    out_uv.y = (y + 1.0) * 0.5;\n"
                               "\n"
-                              "    gl_Position = vec4(x, y, 0.0, 1.0);\n"
+                              "    out_position = float4(x, y, 0.0, 1.0);\n"
                               "}\n";
 
         std::unique_ptr<Shader> fs_ptr;
         std::unique_ptr<Shader> vs_ptr;
 
         {
-            auto fs_create_info_ptr = ShaderCreateInfo::create_from_glsl("FS",
-                                                                         ShaderType::FRAGMENT,
-                                                                         fs_glsl);
+            auto fs_create_info_ptr = ShaderCreateInfo::create_from_cg("FS",
+                                                                       ShaderType::FRAGMENT,
+                                                                       fs_glsl);
             SCE_DBG_ASSERT(fs_create_info_ptr != nullptr);
 
             fs_ptr = Shader::create(std::move(fs_create_info_ptr),
@@ -77,9 +71,9 @@ int FullScreenPassApp::rendering_thread_entrypoint(void* app_raw_ptr)
         }
 
         {
-            auto vs_create_info_ptr = ShaderCreateInfo::create_from_glsl("VS",
-                                                                         ShaderType::VERTEX,
-                                                                         vs_glsl);
+            auto vs_create_info_ptr = ShaderCreateInfo::create_from_cg("VS",
+                                                                       ShaderType::VERTEX,
+                                                                       vs_glsl);
             SCE_DBG_ASSERT(vs_create_info_ptr != nullptr);
 
             vs_ptr = Shader::create(std::move(vs_create_info_ptr),
@@ -89,8 +83,8 @@ int FullScreenPassApp::rendering_thread_entrypoint(void* app_raw_ptr)
 
         {
             auto program_create_info_ptr = ProgramCreateInfo::create("Program",
-                                                                     fs_ptr.get(),
-                                                                     vs_ptr.get() );
+                                                                     vs_ptr.get(),
+                                                                     fs_ptr.get() );
 
             program_ptr = Program::create(std::move(program_create_info_ptr),
                                           app_ptr->get_logger_ptr() );
@@ -98,10 +92,23 @@ int FullScreenPassApp::rendering_thread_entrypoint(void* app_raw_ptr)
         }
     }
 
+    static const uint8_t vertex_id_array[] =
+    {
+        0,
+        1,
+        2
+    };
+
+    ::glVertexAttribPointer    (0,               /* index      */
+                                1,               /* size       */
+                                GL_UNSIGNED_BYTE,
+                                GL_FALSE,        /* normalized */
+                                0,               /* stride     */
+                                vertex_id_array);
+    ::glEnableVertexAttribArray(0);
+
     while (!app_ptr->m_must_die)
     {
-        const float intensity = static_cast<float>(n_frames_rendered % 256) / 255.0f;
-
         ::glUseProgram(program_ptr->get_program_id() );
         ::glDrawArrays(GL_TRIANGLES,
                        0, /* first */
