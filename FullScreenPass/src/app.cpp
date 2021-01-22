@@ -38,14 +38,17 @@ int FullScreenPassApp::rendering_thread_entrypoint(void* app_raw_ptr)
     std::unique_ptr<Program> program_ptr;
 
     {
-        const char* fs_glsl = "float4 main(float2 in_uv : TEXCOORD0)\n"
+        const char* fs_glsl = "float4 main(        float2 in_uv : TEXCOORD0,\n"
+                              "            uniform float  t)\n"
                               "{\n"
-                              "    return float4(in_uv.x, in_uv.y, (in_uv.x + in_uv.y) * 0.5, 1.0);\n"
+                              "    float t_adjusted = sin(t * 3.1415);\n"
+                              "\n"
+                              "    return float4(t_adjusted * in_uv.x, (1.0 - t_adjusted) * in_uv.y, (in_uv.x + in_uv.y) * 0.5, 1.0);\n"
                               "}\n";
 
-        const char* vs_glsl = "void main(int        in_n_vertex,\n"
-                              "          float4 out out_position : POSITION,\n"
-                              "          float2 out out_uv       : TEXCOORD0)\n"
+        const char* vs_glsl = "void main(int           in_n_vertex,\n"
+                              "          float4 out    out_position : POSITION,\n"
+                              "          float2 out    out_uv       : TEXCOORD0)\n"
                               "{\n"
                               "    float x = -1.0 + float( (in_n_vertex & 1) << 2);\n"
                               "    float y = -1.0 + float( (in_n_vertex & 2) << 1);\n"
@@ -109,7 +112,11 @@ int FullScreenPassApp::rendering_thread_entrypoint(void* app_raw_ptr)
 
     while (!app_ptr->m_must_die)
     {
+        const float t = static_cast<float>(n_frames_rendered % (90 * 5) ) / (90 * 5 - 1);
+
         ::glUseProgram(program_ptr->get_program_id() );
+        ::glUniform1f (0, /* location */
+                       t);
         ::glDrawArrays(GL_TRIANGLES,
                        0, /* first */
                        3); /* count */
