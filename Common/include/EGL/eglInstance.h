@@ -17,6 +17,7 @@ extern "C"
 #include <vector>
 
 class Logger;
+class TextRenderer;
 
 struct EXTDrawInstancedEntrypoints
 {
@@ -165,6 +166,8 @@ private:
 
     const char* m_gl_extensions_ptr;
     bool        m_never_bound;
+
+    std::unique_ptr<TextRenderer> m_text_renderer_ptr;
 };
 
 #endif /* EGL_INSTANCE_H */

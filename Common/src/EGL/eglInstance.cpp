@@ -7,6 +7,8 @@ extern "C"
 #include <vector>
 
 #include "EGL/eglInstance.h"
+#include "ES/texture.h"
+#include "gfx/text_renderer.h"
 #include "io.h"
 #include "logger.h"
 
@@ -24,6 +26,7 @@ EGLInstance::EGLInstance(Logger* in_logger_ptr)
 
 EGLInstance::~EGLInstance()
 {
+    m_text_renderer_ptr.reset();
 
     if (m_egl_context != nullptr)
     {
@@ -169,6 +172,11 @@ bool EGLInstance::bind_to_current_thread()
                 goto end;
             }
         }
+
+        /* Init text renderer */
+        m_text_renderer_ptr = TextRenderer::create(this,
+                                                   m_logger_ptr);
+        SCE_DBG_ASSERT(m_text_renderer_ptr != nullptr);
 
         /* Done */
         m_never_bound = false;

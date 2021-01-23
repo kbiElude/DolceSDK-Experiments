@@ -21,7 +21,7 @@ add_library(Common STATIC
             src/ES/shader_create_info.cpp
             src/ES/texture.cpp
             src/ES/texture_create_info.cpp
-            src/gfx/font_renderer.cpp
+            src/gfx/text_renderer.cpp
             src/ImageFormats/bmp.cpp
             src/OS/event.cpp
             src/OS/mutex.cpp

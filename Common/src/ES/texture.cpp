@@ -104,5 +104,6 @@ bool Texture::init()
                           static_cast<GLenum>(m_create_info_ptr->get_start_texture_wrap_t() ));
     }
 
+    result = true;
     return result;
 }

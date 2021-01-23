@@ -62,6 +62,10 @@ bool BMP::init(const char* in_file_name_ptr)
                           file_size,
                          &file_data[0]) == false)
         {
+            m_logger_ptr->log(false, /* in_flush_and_wait */
+                              "Failed to read contents of [%s]\n",
+                              in_file_name_ptr);
+
             SCE_DBG_ASSERT(false);
 
             goto end;
@@ -70,8 +74,13 @@ bool BMP::init(const char* in_file_name_ptr)
         header_ptr = reinterpret_cast<const BMPFileHeader*>(file_data.data() );
 
         /* 1. Verify endianness */
-        if (header_ptr->type != 16973 /* BM */)
+        if (header_ptr->type != 19778 /* BM */)
         {
+            m_logger_ptr->log(false, /* in_flush_and_wait */
+                              "Invalid BMP header type in file [%s] (%d)\n",
+                              in_file_name_ptr,
+                              header_ptr->type);
+
             SCE_DBG_ASSERT(false);
 
             goto end;
@@ -80,6 +89,10 @@ bool BMP::init(const char* in_file_name_ptr)
         /* 2. Some sanity checks.. */
         if (header_ptr->compression != 0)
         {
+            m_logger_ptr->log(false, /* in_flush_and_wait */
+                              "Compressed BMP files are not supported [%s]\n",
+                              in_file_name_ptr);
+
             SCE_DBG_ASSERT(header_ptr->compression == 0);
 
             goto end;
@@ -87,6 +100,10 @@ bool BMP::init(const char* in_file_name_ptr)
 
         if (header_ptr->n_bits != 24)
         {
+            m_logger_ptr->log(false, /* in_flush_and_wait */
+                              "Invalid number of bits found in BMP file header [%s]\n",
+                              in_file_name_ptr);
+
             SCE_DBG_ASSERT(header_ptr->n_bits == 24);
 
             goto end;

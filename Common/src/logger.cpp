@@ -81,7 +81,7 @@ int Logger::file_logger_thread_entrypoint(void* logger_raw_ptr)
 
     /* 1. Create/reset existing log file */
     logger_ptr->m_file_id = ::sceIoOpen("ux0:data/elude.log",
-                                        SCE_O_CREAT | SCE_O_WRONLY,
+                                        SCE_O_CREAT | SCE_O_TRUNC | SCE_O_WRONLY,
                                         0777); /* mode */
 
     if (logger_ptr->m_file_id < 0)
