@@ -1,5 +1,7 @@
 #include "app.h"
 
+#include "ImageFormats/bmp.h"
+
 int main(int /* argc */, char* /* argv */[])
 {
     std::unique_ptr<FullScreenPassApp> app_ptr(new FullScreenPassApp() );

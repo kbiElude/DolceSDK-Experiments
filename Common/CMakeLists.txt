@@ -10,7 +10,6 @@ include_directories(${DOLCESDK}/samples/common
                    )
 
 add_library(Common STATIC
-            src/baseApp.cpp
             src/EGL/eglInstance.cpp
             src/ES/framebuffer.cpp
             src/ES/framebuffer_create_info.cpp
@@ -22,12 +21,16 @@ add_library(Common STATIC
             src/ES/shader_create_info.cpp
             src/ES/texture.cpp
             src/ES/texture_create_info.cpp
+            src/gfx/font_renderer.cpp
+            src/ImageFormats/bmp.cpp
             src/OS/event.cpp
-            src/io.cpp
-            src/logger.cpp
             src/OS/mutex.cpp
             src/OS/semaphore.cpp
             src/OS/thread.cpp
+            src/baseApp.cpp
+            src/io.cpp
+            src/logger.cpp
+            src/utils.cpp
 )
 
 target_link_libraries(Common
