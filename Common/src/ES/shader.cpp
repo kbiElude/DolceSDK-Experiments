@@ -69,8 +69,11 @@ bool Shader::init()
     {
         case ShaderSource::BLOB:
         {
-            // todo
-            SCE_DBG_ASSERT(false);
+             ::glShaderBinary(1, /* count */
+                             &m_shader_id,
+                              0, /* binaryformat */
+                              m_create_info_ptr->get_blob_ptr (),
+                              m_create_info_ptr->get_blob_size() );
 
             goto end;
         }

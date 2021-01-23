@@ -3,6 +3,7 @@
 
 #include <GLES2/gl2.h>
 #include <memory>
+#include <vector>
 
 extern "C"
 {
@@ -30,6 +31,10 @@ class ShaderCreateInfo
 {
 public:
     /* Public functions */
+    static std::unique_ptr<ShaderCreateInfo> create_from_blob(const char*       in_name_ptr,
+                                                              const ShaderType& in_type,
+                                                              const void*       in_blob_ptr,
+                                                              const uint32_t&   in_blob_size);
     static std::unique_ptr<ShaderCreateInfo> create_from_cg  (const char*       in_name_ptr,
                                                               const ShaderType& in_type,
                                                               const char*       in_shader_code_ptr);
@@ -38,6 +43,20 @@ public:
                                                               const char*       in_shader_code_ptr);
 
     ~ShaderCreateInfo();
+
+    const void* get_blob_ptr() const
+    {
+        SCE_DBG_ASSERT(m_source == ShaderSource::BLOB);
+
+        return m_blob.data();
+    }
+
+    uint32_t get_blob_size() const
+    {
+        SCE_DBG_ASSERT(m_source == ShaderSource::BLOB);
+
+        return static_cast<uint32_t>(m_blob.size() );
+    }
 
     const char* get_cg() const
     {
@@ -74,13 +93,15 @@ private:
     ShaderCreateInfo(const char*         in_name_ptr,
                      const ShaderType&   in_type,
                      const ShaderSource& in_source,
-                     const void*         in_data_ptr);
+                     const void*         in_data_ptr,
+                     const uint32_t*     in_opt_data_size_ptr);
 
     /* Private variables */
-    std::string  m_name;
-    std::string  m_shader_code;
-    ShaderSource m_source;
-    ShaderType   m_type;
+    std::vector<uint8_t> m_blob;
+    std::string          m_name;
+    std::string          m_shader_code;
+    ShaderSource         m_source;
+    ShaderType           m_type;
 };
 
 #endif /* SHADER_CREATE_INFO_H */
