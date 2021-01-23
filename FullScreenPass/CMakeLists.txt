@@ -28,6 +28,6 @@ dolce_create_vpk(${PROJECT_NAME}.vpk ${VITA_TITLEID} "${SELF}"
                 VERSION ${VITA_VERSION}
                 FILE "$ENV{DOLCESDK}/arm-dolce-eabi/module/libScePiglet.suprx" module/libScePiglet.suprx
                 FILE "$ENV{DOLCESDK}/arm-dolce-eabi/module/libshacccg.suprx"   module/libshacccg.suprx
-                FILE "${VITAEXPERIMENTS-COMMON_SOURCE_DIR}/meiryo_36.bmp" ./meiryo_36.bmp
-                FILE "${VITAEXPERIMENTS-COMMON_SOURCE_DIR}/meiryo_36.dat" ./meiryo_36.dat
+                FILE "${VITAEXPERIMENTS-COMMON_SOURCE_DIR}/assets/meiryo_36.bmp" ./meiryo_36.bmp
+                FILE "${VITAEXPERIMENTS-COMMON_SOURCE_DIR}/assets/meiryo_36.dat" ./meiryo_36.dat
 )
