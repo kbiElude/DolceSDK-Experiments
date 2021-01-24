@@ -10,6 +10,9 @@
 #include <string.h>
 #include <vector>
 
+#define N_CHARACTER_PROPS_PTR_TO_PREALLOC (64)
+
+
 TextRenderer::DATHeader::DATHeader()
 {
     memset(this,
@@ -17,12 +20,48 @@ TextRenderer::DATHeader::DATHeader()
            sizeof(*this) );
 }
 
+TextRenderer::TextCharacterProps::TextCharacterProps()
+{
+    memset(this,
+           0,
+           sizeof(*this) );
+}
+
+void TextRenderer::TextLayer::reset()
+{
+    for (auto& item_iterator : n_char_to_text_character_props_vec)
+    {
+        for (auto& item_iterator2 : item_iterator.second)
+        {
+            available_character_props_ptr_vec_ptr->push_back(item_iterator2);
+        }
+    }
+
+    n_char_to_text_character_props_vec.clear();
+}
+
 TextRenderer::TextRenderer(const EGLInstance* in_egl_instance_ptr,
                            Logger*            in_logger_ptr)
-    :m_egl_instance_ptr(in_egl_instance_ptr),
-     m_logger_ptr      (in_logger_ptr)
+    :m_egl_instance_ptr     (in_egl_instance_ptr),
+     m_logger_ptr           (in_logger_ptr),
+     m_n_text_layers_created(0)
 {
     /* Stub */
+}
+
+void TextRenderer::bake_text_character_props_batch()
+{
+    m_prealloced_character_props_ptr_vec.reserve(m_prealloced_character_props_ptr_vec.size() + N_CHARACTER_PROPS_PTR_TO_PREALLOC);
+
+    for (uint32_t n_instance = 0;
+                  n_instance < N_CHARACTER_PROPS_PTR_TO_PREALLOC;
+                ++n_instance)
+    {
+        std::unique_ptr<TextCharacterProps> new_item_ptr(new TextCharacterProps() );
+
+        m_available_character_props_ptr_vec.push_back(new_item_ptr.get() );
+        m_prealloced_character_props_ptr_vec.at      (n_instance)          = std::move(new_item_ptr);
+    }
 }
 
 std::unique_ptr<TextRenderer> TextRenderer::create(const EGLInstance* in_egl_instance_ptr,
@@ -46,6 +85,25 @@ std::unique_ptr<TextRenderer> TextRenderer::create(const EGLInstance* in_egl_ins
     }
 
     return result_ptr;
+}
+
+TextLayerID TextRenderer::create_layer()
+{
+    TextLayerID result = ++m_n_text_layers_created;
+
+    m_text_layer_map[result] = TextLayer(&m_available_character_props_ptr_vec);
+
+    return result;
+}
+
+void TextRenderer::delete_layer(const TextLayerID& in_layer_id)
+{
+    auto iterator = m_text_layer_map.find(in_layer_id);
+
+    if (iterator != m_text_layer_map.end() )
+    {
+        m_text_layer_map.erase(iterator);
+    }
 }
 
 bool TextRenderer::init()
@@ -166,6 +224,10 @@ bool TextRenderer::init()
 
     /* NOTE: A flush should not be too costly, given the renderer is initialized at pre-init time. */
     result = (::glGetError() == GL_NO_ERROR);
+
+    /* Finally, prealloc character props struct instances for use at runtime */
+    bake_text_character_props_batch();
+
 end:
     if (result)
     {
@@ -179,4 +241,50 @@ end:
     }
 
     return result;
+}
+
+void TextRenderer::insert_text(const TextLayerID& in_layer_id,
+                               const float*       in_x1y1_normalized_ptr,
+                               const char*        in_text_string_ptr)
+{
+    auto&      layer_props  = m_text_layer_map.at(in_layer_id);
+    const auto n_characters = strlen(in_text_string_ptr);
+
+    for (uint32_t n_character = 0;
+                  n_character < n_characters;
+                ++n_character)
+    {
+        const auto          character      = in_text_string_ptr[n_character];
+        TextCharacterProps* char_props_ptr = nullptr;
+        const auto&         font_props     = m_font_properties_vec.at(character);
+
+        if (m_available_character_props_ptr_vec.size() == 0)
+        {
+            bake_text_character_props_batch();
+        }
+
+        char_props_ptr = m_available_character_props_ptr_vec.back();
+        SCE_DBG_ASSERT(char_props_ptr != nullptr);
+
+        m_available_character_props_ptr_vec.pop_back();
+
+        char_props_ptr->src_u1v1[0] = font_props.u1v1       [0];
+        char_props_ptr->src_u1v1[1] = font_props.u1v1       [1];
+        char_props_ptr->src_u2v2[0] = font_props.u2v2       [0];
+        char_props_ptr->src_u2v2[1] = font_props.u2v2       [1];
+        char_props_ptr->dst_u1v1[0] = in_x1y1_normalized_ptr[0];
+        char_props_ptr->dst_u1v1[1] = in_x1y1_normalized_ptr[1];
+
+        layer_props.n_char_to_text_character_props_vec[character].push_back(char_props_ptr);
+    }
+}
+
+void TextRenderer::reset_layer(const TextLayerID& in_layer_id)
+{
+    auto iterator = m_text_layer_map.find(in_layer_id);
+
+    if (iterator != m_text_layer_map.end() )
+    {
+        iterator->second.reset();
+    }
 }
