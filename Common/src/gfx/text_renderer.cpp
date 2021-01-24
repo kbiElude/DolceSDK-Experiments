@@ -51,7 +51,7 @@ TextRenderer::TextRenderer(const EGLInstance* in_egl_instance_ptr,
 
 void TextRenderer::bake_text_character_props_batch()
 {
-    m_prealloced_character_props_ptr_vec.reserve(m_prealloced_character_props_ptr_vec.size() + N_CHARACTER_PROPS_PTR_TO_PREALLOC);
+    m_prealloced_character_props_ptr_vec.resize(m_prealloced_character_props_ptr_vec.size() + N_CHARACTER_PROPS_PTR_TO_PREALLOC);
 
     for (uint32_t n_instance = 0;
                   n_instance < N_CHARACTER_PROPS_PTR_TO_PREALLOC;
