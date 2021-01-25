@@ -56,6 +56,31 @@ std::unique_ptr<Program> Program::create(std::unique_ptr<ProgramCreateInfo> in_c
     return result_ptr;
 }
 
+const VariableProperties* Program::get_active_attribute_props_ptr_by_name(const char* in_name) const
+{
+    auto                      iterator   = m_name_to_active_attribute_props_ptr_map.find(in_name);
+    const VariableProperties* result_ptr = nullptr;
+
+    if (iterator != m_name_to_active_attribute_props_ptr_map.end() )
+    {
+        result_ptr = iterator->second;
+    }
+
+    return result_ptr;
+}
+
+const VariableProperties* Program::get_active_uniform_props_ptr_by_name(const char* in_name) const
+{
+    auto                      iterator   = m_name_to_active_uniform_props_ptr_map.find(in_name);
+    const VariableProperties* result_ptr = nullptr;
+
+    if (iterator != m_name_to_active_uniform_props_ptr_map.end() )
+    {
+        result_ptr = iterator->second;
+    }
+
+    return result_ptr;
+}
 
 bool Program::init()
 {
@@ -123,6 +148,91 @@ bool Program::init()
         }
     }
 
+    /* Cache active attributes */
+    {
+        GLint max_attribute_name_length = 0;
+        GLint n_active_attributes       = 0;
+
+        ::glGetProgramiv(m_program_id,
+                         GL_ACTIVE_ATTRIBUTES,
+                        &n_active_attributes);
+        ::glGetProgramiv(m_program_id,
+                         GL_ACTIVE_ATTRIBUTE_MAX_LENGTH,
+                        &max_attribute_name_length);
+
+        m_active_attribute_vec.resize(n_active_attributes);
+
+        for (GLint n_current_attribute = 0;
+                   n_current_attribute < n_active_attributes;
+                 ++n_current_attribute)
+        {
+            VariableProperties current_attribute_props;
+            GLint              dummy                   = 0;
+            GLenum             var_type                = 0;
+
+            current_attribute_props.name.resize(max_attribute_name_length + 1);
+
+            ::glGetActiveAttrib(m_program_id,
+                                n_current_attribute,
+                                max_attribute_name_length,
+                               &dummy,
+                               &current_attribute_props.array_size,
+                               &var_type,
+                               &current_attribute_props.name[0]);
+
+            current_attribute_props.type     = static_cast<CGVariableType>(var_type);
+            current_attribute_props.location = ::glGetAttribLocation      (m_program_id,
+                                                                           current_attribute_props.name.c_str() );
+
+            SCE_DBG_ASSERT(current_attribute_props.location != -1);
+
+            m_active_attribute_vec.at               (n_current_attribute)          = current_attribute_props;
+            m_name_to_active_attribute_props_ptr_map[current_attribute_props.name] = &m_active_attribute_vec.at(n_current_attribute);
+        }
+    }
+
+    /* Cache active uniforms */
+    {
+        GLint max_uniform_name_length = 0;
+        GLint n_active_uniforms       = 0;
+
+        ::glGetProgramiv(m_program_id,
+                         GL_ACTIVE_UNIFORMS,
+                        &n_active_uniforms);
+        ::glGetProgramiv(m_program_id,
+                         GL_ACTIVE_UNIFORM_MAX_LENGTH,
+                        &max_uniform_name_length);
+
+        m_active_uniform_vec.resize(n_active_uniforms);
+
+        for (GLint n_current_uniform = 0;
+                   n_current_uniform < n_active_uniforms;
+                 ++n_current_uniform)
+        {
+            VariableProperties current_uniform_props;
+            GLint              dummy                 = 0;
+            GLenum             var_type              = 0;
+
+            current_uniform_props.name.resize(max_uniform_name_length + 1);
+
+            ::glGetActiveUniform(m_program_id,
+                                 n_current_uniform,
+                                 max_uniform_name_length,
+                                &dummy,
+                                &current_uniform_props.array_size,
+                                &var_type,
+                                &current_uniform_props.name[0]);
+
+            current_uniform_props.type     = static_cast<CGVariableType>(var_type);
+            current_uniform_props.location = ::glGetUniformLocation     (m_program_id,
+                                                                         current_uniform_props.name.c_str() );
+
+            SCE_DBG_ASSERT(current_uniform_props.location != -1);
+
+            m_active_uniform_vec.at               (n_current_uniform)          = current_uniform_props;
+            m_name_to_active_uniform_props_ptr_map[current_uniform_props.name] = &m_active_uniform_vec.at(n_current_uniform);
+        }
+    }
     result = true;
 end:
     return result;
