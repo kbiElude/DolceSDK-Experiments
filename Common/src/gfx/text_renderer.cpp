@@ -1,4 +1,8 @@
 #include "EGL/eglInstance.h"
+#include "ES/program.h"
+#include "ES/program_create_info.h"
+#include "ES/shader.h"
+#include "ES/shader_create_info.h"
 #include "ES/texture.h"
 #include "ES/texture_create_info.h"
 #include "gfx/text_renderer.h"
@@ -12,6 +16,25 @@
 
 #define N_CHARACTER_PROPS_PTR_TO_PREALLOC (64)
 
+static const char* g_fs_cg = "float4 main(in         float2    in_uv           : TEXCOORD0,\n"
+                             "               uniform sampler2D in_font_texture)\n"
+                             "{\n"
+                             "    return tex2D(in_font_texture, in_uv);\n"
+                             "}\n";
+static const char* g_vs_cg = "void main(in          int    in_n_vertex     : TEXCOORD0,\n"
+                             "          in          int    in_n_instance   : TEXCOORD1,\n"
+                             "              uniform float4 in_src_u1v1u2v2,\n"
+                             "              uniform float2 in_dst_wh,\n"
+                             "              uniform float2 in_dst_x1y1[64],\n"
+                             "          out         float4 out_position    : POSITION,\n"
+                             "          out         float2 out_uv          : TEXCOORD0)\n"
+                             "{\n"
+                             "    out_position = float4(in_n_vertex < 2, (in_n_vertex == 1) || (in_n_vertex == 3), 0, 1);\n"
+                             "\n"
+                             "    out_uv.xy        = in_src_u1v1u2v2.xy + (in_src_u1v1u2v2.zw - in_src_u1v1u2v2.xy) * out_position.xy;\n"
+                             "    out_position.xy *= in_dst_wh;\n"
+                             "    out_position.xy += in_dst_x1y1[in_n_instance].xy;\n"
+                             "}";
 
 TextRenderer::DATHeader::DATHeader()
 {
@@ -219,6 +242,40 @@ bool TextRenderer::init()
                               GL_RGB,            /* format - this should actually be BGR *but* we don't care, it's a font texture */
                               GL_UNSIGNED_BYTE,
                               font_bmp_ptr->get_bgr888_data() );
+        }
+
+        /* Init shaders */
+        {
+            std::unique_ptr<Shader> fs_ptr;
+            std::unique_ptr<Shader> vs_ptr;
+            {
+                auto fs_create_info_ptr = ShaderCreateInfo::create_from_cg("Text Renderer FS",
+                                                                           ShaderType::FRAGMENT,
+                                                                           g_fs_cg);
+
+                fs_ptr = Shader::create(std::move(fs_create_info_ptr),
+                                        m_logger_ptr);
+            }
+
+            {
+                auto vs_create_info_ptr = ShaderCreateInfo::create_from_cg("Text Renderer VS",
+                                                                           ShaderType::VERTEX,
+                                                                           g_vs_cg);
+
+                vs_ptr = Shader::create(std::move(vs_create_info_ptr),
+                                        m_logger_ptr);
+            }
+
+            {
+                auto program_create_info_ptr = ProgramCreateInfo::create("Text Renderer program",
+                                                                         vs_ptr.get(),
+                                                                         fs_ptr.get() );
+
+                m_program_ptr = Program::create(std::move(program_create_info_ptr),
+                                                m_logger_ptr);
+
+                SCE_DBG_ASSERT(m_program_ptr != nullptr);
+            }
         }
     }
 

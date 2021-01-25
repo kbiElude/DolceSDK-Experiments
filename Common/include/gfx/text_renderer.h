@@ -7,6 +7,7 @@
 
 class EGLInstance;
 class Logger;
+class Program;
 class Texture;
 
 typedef uint32_t TextLayerID;
@@ -101,6 +102,7 @@ private:
 
     std::vector<FontProperties> m_font_properties_vec;
     std::unique_ptr<Texture>    m_font_texture_ptr;
+    std::unique_ptr<Program>    m_program_ptr;
 
     std::vector<TextCharacterProps*>                  m_available_character_props_ptr_vec;
     uint32_t                                          m_n_text_layers_created;
