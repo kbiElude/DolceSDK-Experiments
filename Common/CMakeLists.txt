@@ -11,6 +11,8 @@ include_directories(${DOLCESDK}/samples/common
 
 add_library(Common STATIC
             src/EGL/eglInstance.cpp
+            src/ES/buffer.cpp
+            src/ES/buffer_create_info.cpp
             src/ES/framebuffer.cpp
             src/ES/framebuffer_create_info.cpp
             src/ES/program.cpp

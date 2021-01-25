@@ -24,7 +24,7 @@ FullScreenPassApp::FullScreenPassApp()
 
 FullScreenPassApp::~FullScreenPassApp()
 {
-    /* Stub */  
+    /* Stub */
 }
 
 int FullScreenPassApp::rendering_thread_entrypoint(void* app_raw_ptr)
