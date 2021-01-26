@@ -7,6 +7,7 @@ extern "C"
 #include <vector>
 
 #include "EGL/eglInstance.h"
+#include "ES/buffer.h"
 #include "ES/program.h"
 #include "ES/texture.h"
 #include "gfx/text_renderer.h"

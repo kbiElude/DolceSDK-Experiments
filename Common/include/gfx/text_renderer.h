@@ -5,6 +5,7 @@
 #include <unordered_map>
 
 
+class Buffer;
 class EGLInstance;
 class Logger;
 class Program;
@@ -21,11 +22,12 @@ public:
 
     TextLayerID create_layer();
     void        delete_layer(const TextLayerID& in_layer_id);
-    bool        render_layer(const TextLayerID& in_layer_id);
+    bool        render_layer(const TextLayerID& in_layer_id,
+                             const uint32_t*    in_rendertarget_extents_u32vec2_ptr);
     void        reset_layer (const TextLayerID& in_layer_id);
 
     void insert_text(const TextLayerID& in_layer_id,
-                     const float*       in_x1y1_normalized_ptr,
+                     const uint16_t*    in_x1y1_ptr,
                      const char*        in_text_string_ptr);
 
 private:
@@ -48,21 +50,24 @@ private:
 
     struct FontProperties
     {
-        float u1v1[2];
-        float u2v2[2];
+        uint32_t extents[2]; //< in pixels
+        float    u1v1   [2];
+        float    u2v2   [2];
 
         FontProperties()
         {
-            u1v1[0] = 0.0f;
-            u1v1[1] = 0.0f;
-            u2v2[0] = 0.0f;
-            u2v2[1] = 0.0f;
+            extents[0] = 0;
+            extents[1] = 0;
+            u1v1   [0] = 0.0f;
+            u1v1   [1] = 0.0f;
+            u2v2   [0] = 0.0f;
+            u2v2   [1] = 0.0f;
         }
     };
 
     struct TextCharacterProps
     {
-        float dst_u1v1[2];
+        float dst_x1y1[2]; //< normalized
         float src_u1v1[2];
         float src_u2v2[2];
 
@@ -100,6 +105,7 @@ private:
     const EGLInstance* const m_egl_instance_ptr;
     Logger*            const m_logger_ptr;
 
+    std::unique_ptr<Buffer>     m_data_buffer_ptr;
     std::vector<FontProperties> m_font_properties_vec;
     std::unique_ptr<Texture>    m_font_texture_ptr;
     std::unique_ptr<Program>    m_program_ptr;
@@ -108,6 +114,24 @@ private:
     uint32_t                                          m_n_text_layers_created;
     std::vector<std::unique_ptr<TextCharacterProps> > m_prealloced_character_props_ptr_vec;
     std::unordered_map<TextLayerID, TextLayer>        m_text_layer_map;
+
+    struct ProgramUniformLocs
+    {
+        GLint dst_wh;
+        GLint dst_x1y1;
+        GLint font_texture;
+        GLint src_u1v1u2v2;
+
+        ProgramUniformLocs();
+    } m_program_uniform_locations;
+
+    struct VertexAttributeLocs
+    {
+        GLint n_instance;
+        GLint n_vertex;
+
+        VertexAttributeLocs();
+    } m_vertex_attribute_locations;
 };
 
 #endif /* TEXT_RENDERER_H */

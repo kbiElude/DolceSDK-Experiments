@@ -16,6 +16,12 @@ public:
                                           Logger*                           in_logger_ptr);
 
     ~Buffer();
+
+    const GLuint& get_id() const
+    {
+        return m_id;
+    }
+
 private:
     /* Private functions */
     Buffer(std::unique_ptr<BufferCreateInfo> in_create_info_ptr,

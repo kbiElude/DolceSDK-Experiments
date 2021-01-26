@@ -1,4 +1,6 @@
 #include "EGL/eglInstance.h"
+#include "ES/buffer.h"
+#include "ES/buffer_create_info.h"
 #include "ES/program.h"
 #include "ES/program_create_info.h"
 #include "ES/shader.h"
@@ -43,10 +45,24 @@ TextRenderer::DATHeader::DATHeader()
            sizeof(*this) );
 }
 
+TextRenderer::ProgramUniformLocs::ProgramUniformLocs()
+{
+    memset(this,
+           0xFF,
+           sizeof(*this) );
+}
+
 TextRenderer::TextCharacterProps::TextCharacterProps()
 {
     memset(this,
            0,
+           sizeof(*this) );
+}
+
+TextRenderer::VertexAttributeLocs::VertexAttributeLocs()
+{
+    memset(this,
+           0xFF,
            sizeof(*this) );
 }
 
@@ -193,10 +209,12 @@ bool TextRenderer::init()
                 const auto x1                      = (n_character % n_characters_per_row) * dat_header_ptr->cell_width;
                 const auto y1                      = (n_character / n_characters_per_row) * dat_header_ptr->cell_height;
 
-                current_character_props.u1v1[0] = static_cast<float>(x1)                                                 / static_cast<float>(dat_header_ptr->image_width);
-                current_character_props.u1v1[1] = static_cast<float>(y1)                                                 / static_cast<float>(dat_header_ptr->image_height);
-                current_character_props.u2v2[0] = static_cast<float>(x1 + dat_header_ptr->character_widths[n_character]) / static_cast<float>(dat_header_ptr->image_width);
-                current_character_props.u2v2[1] = static_cast<float>(y1 + dat_header_ptr->cell_height)                   / static_cast<float>(dat_header_ptr->image_height);
+                current_character_props.extents[0] = dat_header_ptr->character_widths[n_character];
+                current_character_props.extents[1] = dat_header_ptr->cell_height;
+                current_character_props.u1v1   [0] = static_cast<float>(x1)                                                 / static_cast<float>(dat_header_ptr->image_width);
+                current_character_props.u1v1   [1] = static_cast<float>(y1)                                                 / static_cast<float>(dat_header_ptr->image_height);
+                current_character_props.u2v2   [0] = static_cast<float>(x1 + dat_header_ptr->character_widths[n_character]) / static_cast<float>(dat_header_ptr->image_width);
+                current_character_props.u2v2   [1] = static_cast<float>(y1 + dat_header_ptr->cell_height)                   / static_cast<float>(dat_header_ptr->image_height);
             }
         }
 
@@ -276,6 +294,46 @@ bool TextRenderer::init()
 
                 SCE_DBG_ASSERT(m_program_ptr != nullptr);
             }
+
+            m_program_uniform_locations.dst_wh       = m_program_ptr->get_active_uniform_props_ptr_by_name("dst_wh")->location;
+            m_program_uniform_locations.dst_x1y1     = m_program_ptr->get_active_uniform_props_ptr_by_name("dst_x1y1")->location;
+            m_program_uniform_locations.font_texture = m_program_ptr->get_active_uniform_props_ptr_by_name("font_texture")->location;
+            m_program_uniform_locations.src_u1v1u2v2 = m_program_ptr->get_active_uniform_props_ptr_by_name("src_u1v1u2v2")->location;
+
+            m_vertex_attribute_locations.n_instance = m_program_ptr->get_active_attribute_props_ptr_by_name("n_instance")->location;
+            m_vertex_attribute_locations.n_vertex   = m_program_ptr->get_active_attribute_props_ptr_by_name("n_vertex")->location;
+        }
+
+        /* Bake vertex buffers */
+        {
+            std::unique_ptr<BufferCreateInfo> create_info_ptr;
+            auto                              vb_data         = std::vector<uint8_t>(N_CHARACTER_PROPS_PTR_TO_PREALLOC + 4 /* vertices */);
+
+            for (uint32_t n_instance = 0;
+                          n_instance < N_CHARACTER_PROPS_PTR_TO_PREALLOC;
+                        ++n_instance)
+            {
+                vb_data.at(n_instance) = n_instance;
+            }
+
+            vb_data.at(N_CHARACTER_PROPS_PTR_TO_PREALLOC + 0) = 0;
+            vb_data.at(N_CHARACTER_PROPS_PTR_TO_PREALLOC + 1) = 1;
+            vb_data.at(N_CHARACTER_PROPS_PTR_TO_PREALLOC + 2) = 2;
+
+            create_info_ptr = BufferCreateInfo::create(sizeof(vb_data),
+                                                       BufferUsage::STATIC_DRAW);
+            SCE_DBG_ASSERT(create_info_ptr != nullptr);
+
+            m_data_buffer_ptr = Buffer::create(std::move(create_info_ptr),
+                                               m_logger_ptr);
+            SCE_DBG_ASSERT(m_data_buffer_ptr != nullptr);
+
+            ::glBindBuffer   (GL_ARRAY_BUFFER,
+                              m_data_buffer_ptr->get_id() );
+            ::glBufferSubData(GL_ARRAY_BUFFER,
+                              0, /* offset */
+                              vb_data.size(),
+                              vb_data.data() );
         }
     }
 
@@ -301,11 +359,12 @@ end:
 }
 
 void TextRenderer::insert_text(const TextLayerID& in_layer_id,
-                               const float*       in_x1y1_normalized_ptr,
+                               const uint16_t*    in_x1y1_normalized_ptr,
                                const char*        in_text_string_ptr)
 {
     auto&      layer_props  = m_text_layer_map.at(in_layer_id);
     const auto n_characters = strlen(in_text_string_ptr);
+    float      u_delta      = 0;
 
     for (uint32_t n_character = 0;
                   n_character < n_characters;
@@ -329,11 +388,92 @@ void TextRenderer::insert_text(const TextLayerID& in_layer_id,
         char_props_ptr->src_u1v1[1] = font_props.u1v1       [1];
         char_props_ptr->src_u2v2[0] = font_props.u2v2       [0];
         char_props_ptr->src_u2v2[1] = font_props.u2v2       [1];
-        char_props_ptr->dst_u1v1[0] = in_x1y1_normalized_ptr[0];
-        char_props_ptr->dst_u1v1[1] = in_x1y1_normalized_ptr[1];
+        char_props_ptr->dst_x1y1[0] = in_x1y1_normalized_ptr[0] + u_delta;
+        char_props_ptr->dst_x1y1[1] = in_x1y1_normalized_ptr[1];
+
+        u_delta += font_props.extents[0];
 
         layer_props.n_char_to_text_character_props_vec[character].push_back(char_props_ptr);
     }
+}
+
+bool TextRenderer::render_layer(const TextLayerID& in_layer_id,
+                                const uint32_t*    in_rendertarget_extents_u32vec2_ptr)
+{
+    const auto  ext_instanced_arrays_entrypoints_ptr = m_egl_instance_ptr->get_ext_instanced_arrays_entrypoints_ptr();
+    bool        result                               = false;
+    const auto* text_layer_ptr                       = &m_text_layer_map.at                                        (in_layer_id);
+
+    /* Set up relevant state .. */
+    ::glEnableVertexAttribArray(m_vertex_attribute_locations.n_instance);
+    ::glEnableVertexAttribArray(m_vertex_attribute_locations.n_vertex);
+
+    ::glBindBuffer(GL_ARRAY_BUFFER,
+                   m_data_buffer_ptr->get_id() );
+
+    ext_instanced_arrays_entrypoints_ptr->glVertexAttribDivisorEXT(m_vertex_attribute_locations.n_instance,
+                                                                   1); /* divisor */
+    ::glVertexAttribPointer                                       (m_vertex_attribute_locations.n_instance,
+                                                                   1,                                                                  /* size       */
+                                                                   GL_UNSIGNED_BYTE,
+                                                                   GL_FALSE,                                                           /* normalized */
+                                                                   sizeof(uint8_t),
+                                                                   reinterpret_cast<const void*>(N_CHARACTER_PROPS_PTR_TO_PREALLOC) ); /* pointer    */
+
+    ::glVertexAttribPointer(m_vertex_attribute_locations.n_vertex,
+                            1,                /* size       */
+                            GL_UNSIGNED_BYTE,
+                            GL_FALSE,         /* normalized */
+                            sizeof(uint8_t),
+                            0);               /* pointer    */
+
+    ::glActiveTexture(GL_TEXTURE0);
+    ::glBindTexture  (GL_TEXTURE_2D,
+                      m_font_texture_ptr->get_texture_id() );
+
+    ::glUseProgram(m_program_ptr->get_program_id() );
+
+    /* Render */
+    for (const auto& iterator : text_layer_ptr->n_char_to_text_character_props_vec)
+    {
+        const auto& current_n_character        = iterator.first;
+        const float character_wh_normalized[2] =
+        {
+            static_cast<float>(m_font_properties_vec.at(current_n_character).extents[0]) / static_cast<float>(in_rendertarget_extents_u32vec2_ptr[0]),
+            static_cast<float>(m_font_properties_vec.at(current_n_character).extents[1]) / static_cast<float>(in_rendertarget_extents_u32vec2_ptr[1]),
+        };
+
+        ::glUniform2fv(m_program_uniform_locations.dst_wh,
+                       1, /* count */
+                       character_wh_normalized);
+
+        for (const auto& current_character_props_ptr : iterator.second)
+        {
+            const float dst_x1y1_normalized[2] =
+            {
+                static_cast<float>(current_character_props_ptr->dst_x1y1[0]) / static_cast<float>(in_rendertarget_extents_u32vec2_ptr[0]),
+                static_cast<float>(current_character_props_ptr->dst_x1y1[1]) / static_cast<float>(in_rendertarget_extents_u32vec2_ptr[1])
+            };
+
+            ::glUniform2fv(m_program_uniform_locations.dst_x1y1,
+                           1, /* count */
+                           dst_x1y1_normalized);
+            ::glUniform4f (m_program_uniform_locations.src_u1v1u2v2,
+                           current_character_props_ptr->src_u1v1[0],
+                           current_character_props_ptr->src_u1v1[1],
+                           current_character_props_ptr->src_u2v2[0],
+                           current_character_props_ptr->src_u2v2[1]);
+
+            /* TODO: Make me instanced */
+            ::glDrawArrays(GL_TRIANGLE_STRIP,
+                           0,  /* first */
+                           3); /* count */
+        }
+    }
+
+    result = true;
+end:
+    return result;
 }
 
 void TextRenderer::reset_layer(const TextLayerID& in_layer_id)
