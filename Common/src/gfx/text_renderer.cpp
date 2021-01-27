@@ -90,7 +90,9 @@ TextRenderer::TextRenderer(const EGLInstance* in_egl_instance_ptr,
 
 void TextRenderer::bake_text_character_props_batch()
 {
-    m_prealloced_character_props_ptr_vec.resize(m_prealloced_character_props_ptr_vec.size() + N_CHARACTER_PROPS_PTR_TO_PREALLOC);
+    const auto n_existing_items = m_prealloced_character_props_ptr_vec.size();
+
+    m_prealloced_character_props_ptr_vec.resize(n_existing_items + N_CHARACTER_PROPS_PTR_TO_PREALLOC);
 
     for (uint32_t n_instance = 0;
                   n_instance < N_CHARACTER_PROPS_PTR_TO_PREALLOC;
@@ -99,7 +101,7 @@ void TextRenderer::bake_text_character_props_batch()
         std::unique_ptr<TextCharacterProps> new_item_ptr(new TextCharacterProps() );
 
         m_available_character_props_ptr_vec.push_back(new_item_ptr.get() );
-        m_prealloced_character_props_ptr_vec.at      (n_instance)          = std::move(new_item_ptr);
+        m_prealloced_character_props_ptr_vec.at      (n_existing_items + n_instance) = std::move(new_item_ptr);
     }
 }
 
@@ -295,13 +297,13 @@ bool TextRenderer::init()
                 SCE_DBG_ASSERT(m_program_ptr != nullptr);
             }
 
-            m_program_uniform_locations.dst_wh       = m_program_ptr->get_active_uniform_props_ptr_by_name("dst_wh")->location;
-            m_program_uniform_locations.dst_x1y1     = m_program_ptr->get_active_uniform_props_ptr_by_name("dst_x1y1")->location;
-            m_program_uniform_locations.font_texture = m_program_ptr->get_active_uniform_props_ptr_by_name("font_texture")->location;
-            m_program_uniform_locations.src_u1v1u2v2 = m_program_ptr->get_active_uniform_props_ptr_by_name("src_u1v1u2v2")->location;
+            m_program_uniform_locations.dst_wh       = m_program_ptr->get_active_uniform_props_ptr_by_name("in_dst_wh")->location;
+            m_program_uniform_locations.dst_x1y1     = m_program_ptr->get_active_uniform_props_ptr_by_name("in_dst_x1y1[0]")->location;
+            m_program_uniform_locations.font_texture = m_program_ptr->get_active_uniform_props_ptr_by_name("in_font_texture")->location;
+            m_program_uniform_locations.src_u1v1u2v2 = m_program_ptr->get_active_uniform_props_ptr_by_name("in_src_u1v1u2v2")->location;
 
-            m_vertex_attribute_locations.n_instance = m_program_ptr->get_active_attribute_props_ptr_by_name("n_instance")->location;
-            m_vertex_attribute_locations.n_vertex   = m_program_ptr->get_active_attribute_props_ptr_by_name("n_vertex")->location;
+            m_vertex_attribute_locations.n_instance = m_program_ptr->get_active_attribute_props_ptr_by_name("in_n_instance")->location;
+            m_vertex_attribute_locations.n_vertex   = m_program_ptr->get_active_attribute_props_ptr_by_name("in_n_vertex")->location;
         }
 
         /* Bake vertex buffers */

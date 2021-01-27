@@ -97,6 +97,9 @@ public:
     const SCEPigletShaderBinaryEntrypoints* get_sce_piglet_shader_binary_entrypoints_ptr() const;
     const SCETextureResourceEntrypoints*    get_sce_texture_resource_entrypoints_ptr    () const;
 
+    const uint32_t* get_rt_extents_wh    () const;
+    TextRenderer*   get_text_renderer_ptr() const;
+
 private:
     /* Private type definitions */
     struct EGLConfigProps

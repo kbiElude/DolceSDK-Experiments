@@ -75,8 +75,8 @@ private:
     std::vector<VariableProperties> m_active_attribute_vec;
     std::vector<VariableProperties> m_active_uniform_vec;
 
-    std::unordered_map<std::string, VariableProperties*> m_name_to_active_attribute_props_ptr_map;
-    std::unordered_map<std::string, VariableProperties*> m_name_to_active_uniform_props_ptr_map;
+    std::unordered_map<std::string, uint32_t> m_name_to_active_attribute_index_map;
+    std::unordered_map<std::string, uint32_t> m_name_to_active_uniform_index_map;
 
 };
 

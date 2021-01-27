@@ -229,6 +229,13 @@ const EXTTextureStorageEntrypoints* EGLInstance::get_ext_texture_storage_entrypo
     return &m_entrypoints_gl_ext_texture_storage;
 }
 
+const uint32_t* EGLInstance::get_rt_extents_wh() const
+{
+    static const uint32_t rt[] = {960, 544};
+
+    return rt;
+}
+
 const SCEPigletShaderBinaryEntrypoints* EGLInstance::get_sce_piglet_shader_binary_entrypoints_ptr() const
 {
     return &m_entrypoints_gl_sce_piglet_shader_binary;
@@ -237,6 +244,13 @@ const SCEPigletShaderBinaryEntrypoints* EGLInstance::get_sce_piglet_shader_binar
 const SCETextureResourceEntrypoints* EGLInstance::get_sce_texture_resource_entrypoints_ptr() const
 {
     return &m_entrypoints_gl_sce_texture_resource_entrypoints;
+}
+
+TextRenderer* EGLInstance::get_text_renderer_ptr() const
+{
+    SCE_DBG_ASSERT(m_text_renderer_ptr != nullptr);
+
+    return m_text_renderer_ptr.get();
 }
 
 bool EGLInstance::init(const bool& in_require_depth_buffer,
@@ -360,7 +374,10 @@ bool EGLInstance::init(const bool& in_require_depth_buffer,
         SCE_DBG_ASSERT(m_egl_context != EGL_NO_CONTEXT);
     }
 
-    /* Create a rendering surface. */
+    /* Create a rendering surface.
+     *
+     * NOTE: If the resolution is ever changed, make sure to update get_rt_extents_wh() too.
+     **/
     m_egl_surface = eglCreateWindowSurface(m_display,
                                            m_egl_config_ptr->egl_config,
                                            VITA_WINDOW_960X544,
